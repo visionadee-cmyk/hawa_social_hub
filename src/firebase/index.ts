@@ -11,7 +11,7 @@ let db: ReturnType<typeof getFirestore> | null = null;
 let storage: ReturnType<typeof getStorage> | null = null;
 let messaging: ReturnType<typeof getMessaging> | null = null;
 
-export const initializeFirebase = async () => {
+export const initializeFirebase = () => {
   // Skip Firebase initialization in demo mode
   if (isDemoMode) {
     console.log('Demo mode: Firebase initialization skipped');
@@ -26,7 +26,7 @@ export const initializeFirebase = async () => {
 
   auth = getAuth(app);
   // Set auth persistence to local storage to persist across OAuth redirects
-  await setPersistence(auth, browserLocalPersistence);
+  setPersistence(auth, browserLocalPersistence).catch(console.error);
   db = getFirestore(app);
   storage = getStorage(app);
 
@@ -41,37 +41,37 @@ export const initializeFirebase = async () => {
   return { app, auth, db, storage, messaging };
 };
 
-export const getFirebaseApp = async () => {
+export const getFirebaseApp = () => {
   if (!app && !isDemoMode) {
-    await initializeFirebase();
+    initializeFirebase();
   }
   return app;
 };
 
-export const getFirebaseAuth = async () => {
+export const getFirebaseAuth = () => {
   if (!auth && !isDemoMode) {
-    await initializeFirebase();
+    initializeFirebase();
   }
   return auth;
 };
 
-export const getFirebaseFirestore = async () => {
+export const getFirebaseFirestore = () => {
   if (!db && !isDemoMode) {
-    await initializeFirebase();
+    initializeFirebase();
   }
   return db;
 };
 
-export const getFirebaseStorage = async () => {
+export const getFirebaseStorage = () => {
   if (!storage && !isDemoMode) {
-    await initializeFirebase();
+    initializeFirebase();
   }
   return storage;
 };
 
-export const getFirebaseMessaging = async () => {
+export const getFirebaseMessaging = () => {
   if (!messaging && !isDemoMode) {
-    await initializeFirebase();
+    initializeFirebase();
   }
   return messaging;
 };

@@ -3,7 +3,6 @@ import { AuthProvider } from './contexts/AuthContext';
 import { BusinessProvider } from './contexts/BusinessContext';
 import { initializeFirebase } from './firebase';
 import { logEnvironmentValidation } from './utils/validateEnv';
-import { useEffect } from 'react';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
@@ -19,11 +18,10 @@ import TikTokCallbackPage from './pages/TikTokCallbackPage';
 // Validate environment configuration
 logEnvironmentValidation();
 
+// Initialize Firebase
+initializeFirebase();
+
 function App() {
-  // Initialize Firebase asynchronously
-  useEffect(() => {
-    initializeFirebase();
-  }, []);
   return (
     <BrowserRouter>
       <AuthProvider>

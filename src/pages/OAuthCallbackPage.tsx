@@ -45,13 +45,13 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
       }
 
       try {
-        const db = await getFirebaseFirestore();
+        const db = getFirebaseFirestore();
         if (!db) {
           throw new Error('Firestore not initialized');
         }
 
         // Check Firebase auth state directly
-        const auth = await getFirebaseAuth();
+        const auth = getFirebaseAuth();
         const currentUser = auth?.currentUser;
         
         console.log('Firebase auth state:', { currentUser, userId: currentUser?.uid });
