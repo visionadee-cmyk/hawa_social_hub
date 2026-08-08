@@ -20,8 +20,10 @@ export const initializeFirebase = () => {
 
   if (getApps().length === 0) {
     app = initializeApp(config.firebase);
+    console.log('[Firebase Debug] Initialized Firebase app with project ID:', config.firebase.projectId);
   } else {
     app = getApps()[0];
+    console.log('[Firebase Debug] Using existing Firebase app with project ID:', config.firebase.projectId);
   }
 
   auth = getAuth(app);
