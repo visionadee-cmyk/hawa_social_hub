@@ -14,19 +14,31 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { getFirebaseAuth, getFirebaseFirestore } from './index';
 import type { User } from '../types';
 
-const auth = getFirebaseAuth();
-const db = getFirebaseFirestore();
+let auth: ReturnType<typeof getFirebaseAuth> | null = null;
+let db: ReturnType<typeof getFirebaseFirestore> | null = null;
+
+// Initialize Firebase auth and db
+const initializeFirebaseServices = async () => {
+  if (!auth) {
+    auth = await getFirebaseAuth();
+  }
+  if (!db) {
+    db = await getFirebaseFirestore();
+  }
+};
 
 const googleProvider = new GoogleAuthProvider();
 
 export const authService = {
   async signInWithEmail(email: string, password: string) {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    await initializeFirebaseServices();
+    const userCredential = await signInWithEmailAndPassword(auth!, email, password);
     return userCredential.user;
   },
 
   async registerWithEmail(email: string, password: string, fullName: string) {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    await initializeFirebaseServices();
+    const userCredential = await createUserWithEmailAndPassword(auth!, email, password);
     
     await updateProfile(userCredential.user, { displayName: fullName });
     await sendEmailVerification(userCredential.user);
@@ -39,15 +51,16 @@ export const authService = {
       createdAt: new Date(),
     };
 
-    await setDoc(doc(db, 'users', userCredential.user.uid), userDoc);
+    await setDoc(doc(db!, 'users', userCredential.user.uid), userDoc);
 
     return userCredential.user;
   },
 
   async signInWithGoogle() {
-    const userCredential = await signInWithPopup(auth, googleProvider);
+    await initializeFirebaseServices();
+    const userCredential = await signInWithPopup(auth!, googleProvider);
     
-    const userDocRef = doc(db, 'users', userCredential.user.uid);
+    const userDocRef = doc(db!, 'users', userCredential.user.uid);
     const userDocSnap = await getDoc(userDocRef);
 
     if (!userDocSnap.exists()) {
@@ -67,25 +80,28 @@ export const authService = {
   },
 
   async signOut() {
-    await firebaseSignOut(auth);
+    await initializeFirebaseServices();
+    await firebaseSignOut(auth!);
   },
 
   async resetPassword(email: string) {
-    await sendPasswordResetEmail(auth, email);
+    await initializeFirebaseServices();
+    await sendPasswordResetEmail(auth!, email);
   },
 
   async resendVerificationEmail() {
-    const user = auth.currentUser;
+    await initializeFirebaseServices();
+    const user = auth!.currentUser;
     if (user) {
       await sendEmailVerification(user);
     }
   },
 
   onAuthStateChange(callback: (user: FirebaseUser | null) => void) {
-    return onAuthStateChanged(auth, callback);
+    return onAuthStateChanged(auth!, callback);
   },
 
   getCurrentUser(): FirebaseUser | null {
-    return auth.currentUser;
+    return auth?.currentUser || null;
   },
 };

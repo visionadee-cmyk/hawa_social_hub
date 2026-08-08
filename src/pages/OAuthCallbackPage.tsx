@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
-import { getFirebaseFirestore } from '../firebase';
+import { getFirebaseFirestore, getFirebaseAuth } from '../firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { isDemoMode } from '../config';
 
@@ -45,14 +45,13 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
       }
 
       try {
-        const db = getFirebaseFirestore();
+        const db = await getFirebaseFirestore();
         if (!db) {
           throw new Error('Firestore not initialized');
         }
 
         // Check Firebase auth state directly
-        const { getFirebaseAuth } = await import('../firebase');
-        const auth = getFirebaseAuth();
+        const auth = await getFirebaseAuth();
         const currentUser = auth?.currentUser;
         
         console.log('Firebase auth state:', { currentUser, userId: currentUser?.uid });

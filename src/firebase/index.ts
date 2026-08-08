@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, browserLocalPersistence, setPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getMessaging } from 'firebase/messaging';
@@ -11,7 +11,7 @@ let db: ReturnType<typeof getFirestore> | null = null;
 let storage: ReturnType<typeof getStorage> | null = null;
 let messaging: ReturnType<typeof getMessaging> | null = null;
 
-export const initializeFirebase = () => {
+export const initializeFirebase = async () => {
   // Skip Firebase initialization in demo mode
   if (isDemoMode) {
     console.log('Demo mode: Firebase initialization skipped');
@@ -25,6 +25,8 @@ export const initializeFirebase = () => {
   }
 
   auth = getAuth(app);
+  // Set auth persistence to local storage to persist across OAuth redirects
+  await setPersistence(auth, browserLocalPersistence);
   db = getFirestore(app);
   storage = getStorage(app);
 
@@ -39,37 +41,37 @@ export const initializeFirebase = () => {
   return { app, auth, db, storage, messaging };
 };
 
-export const getFirebaseApp = () => {
+export const getFirebaseApp = async () => {
   if (!app && !isDemoMode) {
-    initializeFirebase();
+    await initializeFirebase();
   }
   return app;
 };
 
-export const getFirebaseAuth = () => {
+export const getFirebaseAuth = async () => {
   if (!auth && !isDemoMode) {
-    initializeFirebase();
+    await initializeFirebase();
   }
   return auth;
 };
 
-export const getFirebaseFirestore = () => {
+export const getFirebaseFirestore = async () => {
   if (!db && !isDemoMode) {
-    initializeFirebase();
+    await initializeFirebase();
   }
   return db;
 };
 
-export const getFirebaseStorage = () => {
+export const getFirebaseStorage = async () => {
   if (!storage && !isDemoMode) {
-    initializeFirebase();
+    await initializeFirebase();
   }
   return storage;
 };
 
-export const getFirebaseMessaging = () => {
+export const getFirebaseMessaging = async () => {
   if (!messaging && !isDemoMode) {
-    initializeFirebase();
+    await initializeFirebase();
   }
   return messaging;
 };
