@@ -65,13 +65,22 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
         const data = doc.data();
         return {
           id: doc.id,
+          businessId: data.businessId || data.userId || '',
           platform: data.platform,
+          accountId: data.accountId || doc.id,
           accountName: data.accountName || data.pageName || data.username || 'Unknown',
+          username: data.username,
+          profileImage: data.profileImage,
           followers: data.followers || 0,
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+          tokenExpiresAt: data.tokenExpiresAt,
           status: data.status || 'connected',
-          connectedAt: data.connectedAt || new Date().toISOString(),
           lastSyncAt: data.lastSyncAt || null,
-          ...data
+          lastSuccessfulPostAt: data.lastSuccessfulPostAt || null,
+          connectionError: data.connectionError,
+          createdAt: data.createdAt || data.connectedAt ? new Date(data.connectedAt) : new Date(),
+          updatedAt: data.updatedAt || new Date(),
         };
       });
 
