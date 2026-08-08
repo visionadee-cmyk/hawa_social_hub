@@ -50,30 +50,57 @@ export default function SocialAccountsPage() {
     
     platforms.forEach(async (platform) => {
       const oauthDataStr = localStorage.getItem(`oauth_${platform}`);
+      console.log(`[OAuth Debug] Checking for OAuth data for ${platform}:`, oauthDataStr ? 'Found' : 'Not found');
+      
       if (oauthDataStr) {
         try {
           const oauthData = JSON.parse(oauthDataStr);
-          const db = getFirebaseFirestore();
+          console.log('[OAuth Debug] Parsed OAuth data:', oauthData);
           
-          if (db && oauthData.userId) {
-            const socialAccountRef = doc(db, 'socialAccounts', `${oauthData.userId}_${platform}`);
-            const existingDoc = await getDoc(socialAccountRef);
-
-            const accountData = {
-              ...oauthData,
-              ...(existingDoc.exists() ? existingDoc.data() : {}),
-            };
-
-            await setDoc(socialAccountRef, accountData);
-            
-            // Clear the OAuth data from localStorage after successful write
-            localStorage.removeItem(`oauth_${platform}`);
-            
-            // Refresh social accounts to show the new connection
-            refreshSocialAccounts();
+          const db = getFirebaseFirestore();
+          console.log('[OAuth Debug] Firestore instance:', db ? 'Initialized' : 'Not initialized');
+          
+          if (!db) {
+            console.error('[OAuth Debug] Firestore not initialized');
+            return;
           }
+          
+          if (!oauthData.userId) {
+            console.error('[OAuth Debug] No userId in OAuth data');
+            return;
+          }
+
+          const docId = `${oauthData.userId}_${platform}`;
+          console.log('[OAuth Debug] Document ID:', docId);
+          
+          const socialAccountRef = doc(db, 'socialAccounts', docId);
+          console.log('[OAuth Debug] Document reference created');
+          
+          const existingDoc = await getDoc(socialAccountRef);
+          console.log('[OAuth Debug] Existing document exists:', existingDoc.exists());
+
+          const accountData = {
+            ...oauthData,
+            ...(existingDoc.exists() ? existingDoc.data() : {}),
+          };
+          
+          console.log('[OAuth Debug] Data to write:', accountData);
+
+          await setDoc(socialAccountRef, accountData);
+          console.log('[OAuth Debug] Successfully wrote to Firestore');
+          
+          // Clear the OAuth data from localStorage after successful write
+          localStorage.removeItem(`oauth_${platform}`);
+          
+          // Refresh social accounts to show the new connection
+          refreshSocialAccounts();
         } catch (err) {
-          console.error('Failed to write OAuth data to Firestore:', err);
+          console.error('[OAuth Debug] Failed to write OAuth data to Firestore:', err);
+          console.error('[OAuth Debug] Error details:', {
+            message: (err as Error).message,
+            code: (err as any).code,
+            details: (err as any).details
+          });
         }
       }
     });
