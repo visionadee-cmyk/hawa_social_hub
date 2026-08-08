@@ -1,0 +1,207 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isBusinessMember(businessId) {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/teamMembers/$(request.auth.uid)).data.businessId == businessId;
+    }
+    
+    function hasPermission(businessId, permission) {
+      return isBusinessMember(businessId) && 
+             permission in get(/databases/$(database)/documents/teamMembers/$(request.auth.uid)).data.permissions;
+    }
+    
+    function isBusinessOwner(businessId) {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/businesses/$(businessId)).data.ownerId == request.auth.uid;
+    }
+    
+    function isSuperAdmin() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin';
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isSuperAdmin();
+      allow write: if isOwner(userId);
+    }
+    
+    // Businesses collection
+    match /businesses/{businessId} {
+      allow read: if isBusinessMember(businessId) || isSuperAdmin();
+      allow create: if isAuthenticated();
+      allow update: if isBusinessOwner(businessId) || isSuperAdmin();
+      allow delete: if isBusinessOwner(businessId) || isSuperAdmin();
+    }
+    
+    // Team members collection
+    match /teamMembers/{memberId} {
+      allow read: if isBusinessMember(resource.data.businessId) || isSuperAdmin();
+      allow create: if isBusinessOwner(request.resource.data.businessId) || isSuperAdmin();
+      allow update: if isBusinessOwner(resource.data.businessId) || isSuperAdmin();
+      allow delete: if isBusinessOwner(resource.data.businessId) || isSuperAdmin();
+    }
+    
+    // Social accounts collection
+    match /socialAccounts/{accountId} {
+      allow read: if isBusinessMember(resource.data.businessId) || isSuperAdmin();
+      allow create: if isBusinessMember(request.resource.data.businessId) && 
+                       hasPermission(request.resource.data.businessId, 'accounts.manage');
+      allow update: if isBusinessMember(resource.data.businessId) && 
+                       hasPermission(resource.data.businessId, 'accounts.manage');
+      allow delete: if isBusinessMember(resource.data.businessId) && 
+                       hasPermission(resource.data.businessId, 'accounts.manage');
+    }
+    
+    // Posts collection
+    match /posts/{postId} {
+      allow read: if isBusinessMember(resource.data.businessId) || isSuperAdmin();
+      allow create: if isBusinessMember(request.resource.data.businessId) && 
+                       hasPermission(request.resource.data.businessId, 'posts.create');
+      allow update: if isBusinessMember(resource.data.businessId) && 
+                       (request.auth.uid == resource.data.createdBy || 
+                        hasPermission(resource.data.businessId, 'posts.edit'));
+      allow delete: if isBusinessMember(resource.data.businessId) && 
+                       (request.auth.uid == resource.data.createdBy || 
+                        hasPermission(resource.data.businessId, 'posts.delete'));
+    }
+    
+    // Post variants collection
+    match /postVariants/{variantId} {
+      allow read: if isBusinessMember(resource.data.businessId) || isSuperAdmin();
+      allow create: if isBusinessMember(request.resource.data.businessId);
+      allow update: if isBusinessMember(resource.data.businessId);
+      allow delete: if isBusinessMember(resource.data.businessId);
+    }
+    
+    // Publishing jobs collection
+    match /publishingJobs/{jobId} {
+      allow read: if isBusinessMember(resource.data.businessId) || isSuperAdmin();
+      allow create: if isBusinessMember(request.resource.data.businessId);
+      allow update: if isBusinessMember(resource.data.businessId);
+      allow delete: if isBusinessMember(resource.data.businessId);
+    }
+    
+    // Publishing logs collection
+    match /publishingLogs/{logId} {
+      allow read: if isBusinessMember(resource.data.businessId) || isSuperAdmin();
+      allow create: if isBusinessMember(request.resource.data.businessId);
+      allow update: if isBusinessMember(resource.data.businessId);
+      allow delete: if isBusinessMember(resource.data.businessId);
+    }
+    
+    // Analytics snapshots collection
+    match /analyticsSnapshots/{snapshotId} {
+      allow read: if isBusinessMember(resource.data.businessId) || isSuperAdmin();
+      allow create: if isBusinessMember(request.resource.data.businessId);
+      allow update: if isBusinessMember(resource.data.businessId);
+      allow delete: if isBusinessMember(resource.data.businessId);
+    }
+    
+    // Post analytics collection
+    match /postAnalytics/{analyticsId} {
+      allow read: if isBusinessMember(resource.data.businessId) || isSuperAdmin();
+      allow create: if isBusinessMember(request.resource.data.businessId);
+      allow update: if isBusinessMember(resource.data.businessId);
+      allow delete: if isBusinessMember(resource.data.businessId);
+    }
+    
+    // Media library collection
+    match /media/{mediaId} {
+      allow read: if isBusinessMember(resource.data.businessId) || isSuperAdmin();
+      allow create: if isBusinessMember(request.resource.data.businessId) && 
+                       hasPermission(request.resource.data.businessId, 'media.manage');
+      allow update: if isBusinessMember(resource.data.businessId) && 
+                       hasPermission(request.resource.data.businessId, 'media.manage');
+      allow delete: if isBusinessMember(resource.data.businessId) && 
+                       hasPermission(request.resource.data.businessId, 'media.manage');
+    }
+    
+    // Brand kits collection
+    match /brandKits/{kitId} {
+      allow read: if isBusinessMember(resource.data.businessId) || isSuperAdmin();
+      allow create: if isBusinessMember(request.resource.data.businessId);
+      allow update: if isBusinessMember(resource.data.businessId);
+      allow delete: if isBusinessMember(resource.data.businessId);
+    }
+    
+    // Templates collection
+    match /templates/{templateId} {
+      allow read: if isBusinessMember(resource.data.businessId) || resource.data.isPublic || isSuperAdmin();
+      allow create: if isBusinessMember(request.resource.data.businessId);
+      allow update: if isBusinessMember(resource.data.businessId) || request.auth.uid == resource.data.createdBy;
+      allow delete: if isBusinessMember(resource.data.businessId) || request.auth.uid == resource.data.createdBy;
+    }
+    
+    // Campaigns collection
+    match /campaigns/{campaignId} {
+      allow read: if isBusinessMember(resource.data.businessId) || isSuperAdmin();
+      allow create: if isBusinessMember(request.resource.data.businessId) && 
+                       hasPermission(request.resource.data.businessId, 'campaigns.manage');
+      allow update: if isBusinessMember(resource.data.businessId) && 
+                       hasPermission(request.resource.data.businessId, 'campaigns.manage');
+      allow delete: if isBusinessMember(resource.data.businessId) && 
+                       hasPermission(request.resource.data.businessId, 'campaigns.manage');
+    }
+    
+    // Content ideas collection
+    match /contentIdeas/{ideaId} {
+      allow read: if isBusinessMember(resource.data.businessId) || isSuperAdmin();
+      allow create: if isBusinessMember(request.resource.data.businessId);
+      allow update: if isBusinessMember(resource.data.businessId);
+      allow delete: if isBusinessMember(resource.data.businessId);
+    }
+    
+    // Notifications collection
+    match /notifications/{notificationId} {
+      allow read: if request.auth.uid == resource.data.userId || isSuperAdmin();
+      allow create: if isAuthenticated();
+      allow update: if request.auth.uid == resource.data.userId;
+      allow delete: if request.auth.uid == resource.data.userId;
+    }
+    
+    // Approvals collection
+    match /approvals/{approvalId} {
+      allow read: if isBusinessMember(resource.data.businessId) || isSuperAdmin();
+      allow create: if isBusinessMember(request.resource.data.businessId);
+      allow update: if isBusinessMember(resource.data.businessId);
+      allow delete: if isBusinessMember(resource.data.businessId);
+    }
+    
+    // Activity logs collection
+    match /activityLogs/{logId} {
+      allow read: if isBusinessMember(resource.data.businessId) || isSuperAdmin();
+      allow create: if isAuthenticated();
+      allow update: if isSuperAdmin();
+      allow delete: if isSuperAdmin();
+    }
+    
+    // Settings collection
+    match /settings/{settingId} {
+      allow read: if isBusinessMember(resource.data.businessId) || isSuperAdmin();
+      allow create: if isBusinessOwner(request.resource.data.businessId) || isSuperAdmin();
+      allow update: if isBusinessOwner(resource.data.businessId) || isSuperAdmin();
+      allow delete: if isBusinessOwner(resource.data.businessId) || isSuperAdmin();
+    }
+    
+    // Reports collection
+    match /reports/{reportId} {
+      allow read: if isBusinessMember(resource.data.businessId) || isSuperAdmin();
+      allow create: if isBusinessMember(request.resource.data.businessId) && 
+                       hasPermission(request.resource.data.businessId, 'reports.view');
+      allow update: if isBusinessMember(resource.data.businessId);
+      allow delete: if isBusinessMember(resource.data.businessId);
+    }
+  }
+}
