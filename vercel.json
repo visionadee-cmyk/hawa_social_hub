@@ -4,6 +4,10 @@
   "framework": "vite",
   "rewrites": [
     {
+      "source": "/favicon.ico",
+      "destination": "/logo.png"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
