@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { isDemoMode } from '../config';
 import { demoBusiness, demoSocialAccounts } from '../services/demo';
+import { getFirebaseFirestore } from '../firebase';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import type { Business, SocialAccount } from '../types';
 
 interface BusinessContextType {
@@ -30,8 +32,12 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     }
 
     // Production: Fetch business and social accounts from Firestore
-    // This would be implemented with actual Firestore queries
-    setLoading(false);
+    const loadInitialData = async () => {
+      await refreshSocialAccounts();
+      setLoading(false);
+    };
+
+    loadInitialData();
   }, []);
 
   const setBusiness = (business: Business | null) => {
@@ -46,7 +52,33 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       // Don't reset - keep current state
       return;
     }
-    // Production: Refresh from Firestore
+
+    const db = getFirebaseFirestore();
+    if (!db) return;
+
+    try {
+      // Fetch all social accounts from Firestore
+      const socialAccountsRef = collection(db, 'socialAccounts');
+      const snapshot = await getDocs(socialAccountsRef);
+      
+      const accounts: SocialAccount[] = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          platform: data.platform,
+          accountName: data.accountName || data.pageName || data.username || 'Unknown',
+          followers: data.followers || 0,
+          status: data.status || 'connected',
+          connectedAt: data.connectedAt || new Date().toISOString(),
+          lastSyncAt: data.lastSyncAt || null,
+          ...data
+        };
+      });
+
+      setSocialAccounts(accounts);
+    } catch (error) {
+      console.error('Failed to refresh social accounts:', error);
+    }
   };
 
   const removeSocialAccount = (accountId: string) => {

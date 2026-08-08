@@ -79,7 +79,12 @@ export default function SocialAccountsPage() {
           // Skip getDoc to avoid read permission issues - just write directly
           console.log('[OAuth Debug] Skipping getDoc to avoid read permission issues');
           
-          const accountData = oauthData;
+          const accountData = {
+            ...oauthData,
+            status: 'connected',
+            followers: oauthData.followers || 0,
+            accountName: oauthData.accountName || oauthData.pageName || oauthData.username || 'Connected Account',
+          };
           console.log('[OAuth Debug] Data to write:', accountData);
 
           await setDoc(socialAccountRef, accountData, { merge: true });
