@@ -56,11 +56,10 @@ service cloud.firestore {
     // Social accounts collection
     match /socialAccounts/{accountId} {
       allow read: if isBusinessMember(resource.data.businessId) || isSuperAdmin();
-      // Allow create if authenticated with proper permissions OR if userId matches document ID pattern (for OAuth)
+      // Allow create if authenticated with proper permissions OR if userId is present (for OAuth)
       allow create: if (isAuthenticated() && isBusinessMember(request.resource.data.businessId) && 
                        hasPermission(request.resource.data.businessId, 'accounts.manage')) ||
-                       (request.resource.data.userId != null && 
-                        accountId == request.resource.data.userId + '_' + request.resource.data.platform);
+                       request.resource.data.userId != null;
       allow update: if isBusinessMember(resource.data.businessId) && 
                        hasPermission(request.resource.data.businessId, 'accounts.manage');
       allow delete: if isBusinessMember(resource.data.businessId) && 
