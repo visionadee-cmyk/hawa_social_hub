@@ -13,15 +13,16 @@ export class InstagramAdapter implements SocialPlatformAdapter {
       return demoService.connectAccount('instagram');
     }
 
-    // Production: Initiate Instagram OAuth flow
+    // Production: Initiate Instagram OAuth flow using Facebook Login
+    // Instagram Business accounts use Facebook Login, not Instagram Basic Display API
     const redirectUri = `${window.location.origin}/auth/callback/instagram`;
-    const scope = 'user_profile,user_media';
+    const scope = 'pages_show_list,instagram_basic,instagram_manage_insights,instagram_manage_comments,pages_read_engagement';
     const state = Math.random().toString(36).substring(2, 15);
     
     // Store state for verification
     sessionStorage.setItem('instagram_oauth_state', state);
     
-    const authUrl = new URL('https://api.instagram.com/oauth/authorize');
+    const authUrl = new URL('https://www.facebook.com/v18.0/dialog/oauth');
     authUrl.searchParams.append('client_id', config.meta.appId);
     authUrl.searchParams.append('redirect_uri', redirectUri);
     authUrl.searchParams.append('scope', scope);
