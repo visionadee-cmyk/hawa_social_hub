@@ -50,14 +50,17 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
           throw new Error('Firestore not initialized');
         }
 
-        // Exchange code for access token (this would normally be done on a backend server)
-        // For now, we'll store the code and handle token exchange later
-        const userId = localStorage.getItem('userId');
-        if (!userId) {
-          // User not authenticated, redirect to login with OAuth code
+        // Check Firebase auth state directly
+        const { getFirebaseAuth } = await import('../firebase');
+        const auth = getFirebaseAuth();
+        const currentUser = auth?.currentUser;
+        
+        console.log('Firebase auth state:', { currentUser, userId: currentUser?.uid });
+        
+        if (!currentUser) {
+          // User not authenticated in Firebase, redirect to login with OAuth code
           const code = searchParams.get('code');
           const state = searchParams.get('state');
-          const platform = searchParams.get('platform') || 'facebook';
           
           // Store OAuth data temporarily
           sessionStorage.setItem('pending_oauth_code', code || '');
@@ -71,6 +74,8 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
           }, 2000);
           return;
         }
+
+        const userId = currentUser.uid;
 
         // Store the OAuth code temporarily (in production, exchange for token on backend)
         const socialAccountRef = doc(db, 'socialAccounts', `${userId}_${platform}`);
