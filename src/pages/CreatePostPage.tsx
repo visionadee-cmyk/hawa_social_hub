@@ -86,13 +86,13 @@ export default function CreatePostPage() {
 
     const captionValidation = validateCaption(caption);
     if (!captionValidation.valid) {
-      setError(captionValidation.error);
+      setError(captionValidation.error || 'Invalid caption');
       return;
     }
 
     const hashtagValidation = validateHashtags(hashtags);
     if (!hashtagValidation.valid) {
-      setError(hashtagValidation.error);
+      setError(hashtagValidation.error || 'Invalid hashtags');
       return;
     }
 

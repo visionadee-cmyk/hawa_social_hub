@@ -13,8 +13,8 @@ import {
   addDoc,
   onSnapshot,
   QueryConstraint,
-  DocumentData,
 } from 'firebase/firestore';
+import type { DocumentData } from 'firebase/firestore';
 import { getFirebaseFirestore } from './index';
 import type { Business, TeamMember, SocialAccount, Post, PostVariant, PublishingJob, AnalyticsSnapshot, PostAnalytics } from '../types';
 

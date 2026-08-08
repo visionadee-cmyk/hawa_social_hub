@@ -38,10 +38,10 @@ export const validateEnvironment = (): ValidationResult => {
   }
 
   // Validate TikTok configuration
-  if (!config.tikTok.clientKey) {
+  if (!config.tiktok.clientKey) {
     warnings.push('VITE_TIKTOK_CLIENT_KEY is not set - TikTok integration will not work');
   }
-  if (!config.tikTok.clientSecret) {
+  if (!config.tiktok.clientSecret) {
     warnings.push('VITE_TIKTOK_CLIENT_SECRET is not set - TikTok integration will not work');
   }
 

@@ -45,7 +45,7 @@ export const config: AppConfig = {
   firebase: getFirebaseConfig(),
   cloudinary: getCloudinaryConfig(),
   meta: getMetaConfig(),
-  tikTok: getTikTokConfig(),
+  tiktok: getTikTokConfig(),
   ai: getAIConfig(),
 };
 
