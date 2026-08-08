@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useBusiness } from '../contexts/BusinessContext';
+import { useAuth } from '../contexts/AuthContext';
 import { getPlatformAdapter } from '../integrations';
 import { isDemoMode } from '../config';
 import { formatNumber, formatRelativeTime } from '../utils/formatters';
@@ -32,11 +34,22 @@ const demoAccounts: Record<SocialPlatform, DemoAccount[]> = {
 
 export default function SocialAccountsPage() {
   const { socialAccounts, refreshSocialAccounts, removeSocialAccount, addSocialAccount } = useBusiness();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const [showAccountSelector, setShowAccountSelector] = useState<SocialPlatform | null>(null);
 
   const handleConnect = (platform: SocialPlatform) => {
+    // Check if user is authenticated before connecting social media
+    if (!isDemoMode && !user) {
+      setError('Please log in first to connect social media accounts');
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
+      return;
+    }
+
     if (isDemoMode) {
       setShowAccountSelector(platform);
     } else {
