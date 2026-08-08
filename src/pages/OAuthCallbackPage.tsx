@@ -90,6 +90,25 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
             if (pagesData.data && pagesData.data.length > 0) {
               const page = pagesData.data[0];
               
+              // Fetch page insights for followers/likes
+              let followers = 0;
+              try {
+                const insightsResponse = await fetch(
+                  `https://graph.facebook.com/v18.0/${page.id}/insights?metric=page_fan_adds,page_impressions,page_post_engagements&period=day&access_token=${tokenData.access_token}`
+                );
+                const insightsData = await insightsResponse.json();
+                
+                // Try to get follower count from page info as fallback
+                const pageInfoResponse = await fetch(
+                  `https://graph.facebook.com/v18.0/${page.id}?fields=fan_count,followers_count&access_token=${tokenData.access_token}`
+                );
+                const pageInfoData = await pageInfoResponse.json();
+                
+                followers = pageInfoData.fan_count || pageInfoData.followers_count || 0;
+              } catch (insightError) {
+                console.error('[OAuth] Failed to fetch page insights:', insightError);
+              }
+              
               const oauthData = {
                 userId,
                 platform,
@@ -97,14 +116,14 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
                 pageId: page.id,
                 pageName: page.name,
                 accountName: page.name,
-                followers: 0, // Would need to fetch page insights separately
+                followers: followers,
                 state,
                 connectedAt: new Date().toISOString(),
                 status: 'connected',
               };
               
               localStorage.setItem(`oauth_${platform}`, JSON.stringify(oauthData));
-              console.log('[OAuth] Successfully fetched page details:', page.name);
+              console.log('[OAuth] Successfully fetched page details:', page.name, 'Followers:', followers);
             } else {
               throw new Error('No Facebook pages found');
             }
