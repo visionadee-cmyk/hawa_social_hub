@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBusiness } from '../contexts/BusinessContext';
 import { useAuth } from '../contexts/AuthContext';
 import { getPlatformAdapter } from '../integrations';
 import { isDemoMode } from '../config';
 import { formatNumber, formatRelativeTime } from '../utils/formatters';
+import { getFirebaseFirestore } from '../firebase';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { Loader2, CheckCircle, AlertCircle, RefreshCw, Link as LinkIcon, X, XCircle } from 'lucide-react';
 import type { SocialPlatform } from '../types';
 
@@ -39,6 +41,43 @@ export default function SocialAccountsPage() {
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
   const [showAccountSelector, setShowAccountSelector] = useState<SocialPlatform | null>(null);
+
+  // Check for OAuth data in localStorage and write to Firestore
+  useEffect(() => {
+    if (isDemoMode) return;
+
+    const platforms: SocialPlatform[] = ['facebook', 'instagram', 'tiktok'];
+    
+    platforms.forEach(async (platform) => {
+      const oauthDataStr = localStorage.getItem(`oauth_${platform}`);
+      if (oauthDataStr) {
+        try {
+          const oauthData = JSON.parse(oauthDataStr);
+          const db = getFirebaseFirestore();
+          
+          if (db && oauthData.userId) {
+            const socialAccountRef = doc(db, 'socialAccounts', `${oauthData.userId}_${platform}`);
+            const existingDoc = await getDoc(socialAccountRef);
+
+            const accountData = {
+              ...oauthData,
+              ...(existingDoc.exists() ? existingDoc.data() : {}),
+            };
+
+            await setDoc(socialAccountRef, accountData);
+            
+            // Clear the OAuth data from localStorage after successful write
+            localStorage.removeItem(`oauth_${platform}`);
+            
+            // Refresh social accounts to show the new connection
+            refreshSocialAccounts();
+          }
+        } catch (err) {
+          console.error('Failed to write OAuth data to Firestore:', err);
+        }
+      }
+    });
+  }, [refreshSocialAccounts]);
 
   const handleConnect = (platform: SocialPlatform) => {
     // Check if user is authenticated before connecting social media

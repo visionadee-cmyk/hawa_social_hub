@@ -45,11 +45,6 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
       }
 
       try {
-        const db = getFirebaseFirestore();
-        if (!db) {
-          throw new Error('Firestore not initialized');
-        }
-
         // Use localStorage userId instead of Firebase auth state
         // This works because userId is stored in localStorage during login
         const userId = localStorage.getItem('userId');
@@ -74,21 +69,18 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
           return;
         }
 
-        // Store the OAuth code temporarily (in production, exchange for token on backend)
-        const socialAccountRef = doc(db, 'socialAccounts', `${userId}_${platform}`);
-        const existingDoc = await getDoc(socialAccountRef);
-
-        const accountData = {
+        // Store OAuth data in localStorage to write to Firestore later
+        // This avoids Firestore initialization issues during OAuth callback
+        const oauthData = {
           userId,
           platform,
           authCode: code,
           state,
           connectedAt: new Date().toISOString(),
           status: 'pending_token_exchange',
-          ...(existingDoc.exists() ? existingDoc.data() : {}),
         };
-
-        await setDoc(socialAccountRef, accountData);
+        
+        localStorage.setItem(`oauth_${platform}`, JSON.stringify(oauthData));
 
         setStatus('success');
         
