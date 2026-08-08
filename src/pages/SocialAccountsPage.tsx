@@ -83,7 +83,11 @@ export default function SocialAccountsPage() {
             ...oauthData,
             status: 'connected',
             followers: oauthData.followers || 0,
-            accountName: oauthData.accountName || oauthData.pageName || oauthData.username || 'Connected Account',
+            accountName: oauthData.accountName || oauthData.pageName || oauthData.username || `${platform.charAt(0).toUpperCase() + platform.slice(1)} Page`,
+            businessId: oauthData.userId,
+            accountId: docId,
+            createdAt: oauthData.connectedAt ? new Date(oauthData.connectedAt) : new Date(),
+            updatedAt: new Date(),
           };
           console.log('[OAuth Debug] Data to write:', accountData);
 
