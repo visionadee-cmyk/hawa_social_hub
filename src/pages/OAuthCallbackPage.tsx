@@ -46,7 +46,6 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
 
       try {
         // Use localStorage userId instead of Firebase auth state
-        // This works because userId is stored in localStorage during login
         const userId = localStorage.getItem('userId');
         
         console.log('OAuth callback userId from localStorage:', userId);
@@ -69,18 +68,73 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
           return;
         }
 
-        // Store OAuth data in localStorage to write to Firestore later
-        // This avoids Firestore initialization issues during OAuth callback
-        const oauthData = {
-          userId,
-          platform,
-          authCode: code,
-          state,
-          connectedAt: new Date().toISOString(),
-          status: 'pending_token_exchange',
-        };
-        
-        localStorage.setItem(`oauth_${platform}`, JSON.stringify(oauthData));
+        // For Facebook/Instagram, try to fetch page details using Graph API
+        if (platform === 'facebook' || platform === 'instagram') {
+          try {
+            // Exchange code for access token using client-side flow (not recommended for production)
+            const tokenResponse = await fetch(
+              `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${import.meta.env.VITE_META_APP_ID}&redirect_uri=${encodeURIComponent(window.location.origin + '/auth/callback/' + platform)}&client_secret=${import.meta.env.VITE_META_APP_SECRET}&code=${code}`
+            );
+            const tokenData = await tokenResponse.json();
+
+            if (tokenData.error) {
+              throw new Error(tokenData.error.message);
+            }
+
+            // Fetch user's pages
+            const pagesResponse = await fetch(
+              `https://graph.facebook.com/v18.0/me/accounts?access_token=${tokenData.access_token}`
+            );
+            const pagesData = await pagesResponse.json();
+
+            if (pagesData.data && pagesData.data.length > 0) {
+              const page = pagesData.data[0];
+              
+              const oauthData = {
+                userId,
+                platform,
+                accessToken: tokenData.access_token,
+                pageId: page.id,
+                pageName: page.name,
+                accountName: page.name,
+                followers: 0, // Would need to fetch page insights separately
+                state,
+                connectedAt: new Date().toISOString(),
+                status: 'connected',
+              };
+              
+              localStorage.setItem(`oauth_${platform}`, JSON.stringify(oauthData));
+              console.log('[OAuth] Successfully fetched page details:', page.name);
+            } else {
+              throw new Error('No Facebook pages found');
+            }
+          } catch (error) {
+            console.error('[OAuth] Failed to fetch Facebook page details:', error);
+            // Fallback to basic OAuth data
+            const oauthData = {
+              userId,
+              platform,
+              authCode: code,
+              state,
+              connectedAt: new Date().toISOString(),
+              status: 'pending_token_exchange',
+            };
+            
+            localStorage.setItem(`oauth_${platform}`, JSON.stringify(oauthData));
+          }
+        } else {
+          // TikTok or other platforms - store basic OAuth data
+          const oauthData = {
+            userId,
+            platform,
+            authCode: code,
+            state,
+            connectedAt: new Date().toISOString(),
+            status: 'pending_token_exchange',
+          };
+          
+          localStorage.setItem(`oauth_${platform}`, JSON.stringify(oauthData));
+        }
 
         setStatus('success');
         
