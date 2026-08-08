@@ -6,7 +6,7 @@ import { getPlatformAdapter } from '../integrations';
 import { isDemoMode } from '../config';
 import { formatNumber, formatRelativeTime } from '../utils/formatters';
 import { getFirebaseFirestore } from '../firebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { Loader2, CheckCircle, AlertCircle, RefreshCw, Link as LinkIcon, X, XCircle } from 'lucide-react';
 import type { SocialPlatform } from '../types';
 
@@ -76,17 +76,13 @@ export default function SocialAccountsPage() {
           const socialAccountRef = doc(db, 'socialAccounts', docId);
           console.log('[OAuth Debug] Document reference created');
           
-          const existingDoc = await getDoc(socialAccountRef);
-          console.log('[OAuth Debug] Existing document exists:', existingDoc.exists());
-
-          const accountData = {
-            ...oauthData,
-            ...(existingDoc.exists() ? existingDoc.data() : {}),
-          };
+          // Skip getDoc to avoid read permission issues - just write directly
+          console.log('[OAuth Debug] Skipping getDoc to avoid read permission issues');
           
+          const accountData = oauthData;
           console.log('[OAuth Debug] Data to write:', accountData);
 
-          await setDoc(socialAccountRef, accountData);
+          await setDoc(socialAccountRef, accountData, { merge: true });
           console.log('[OAuth Debug] Successfully wrote to Firestore');
           
           // Clear the OAuth data from localStorage after successful write
