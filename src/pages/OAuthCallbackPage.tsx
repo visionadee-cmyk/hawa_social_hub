@@ -54,7 +54,22 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
         // For now, we'll store the code and handle token exchange later
         const userId = localStorage.getItem('userId');
         if (!userId) {
-          throw new Error('User not authenticated');
+          // User not authenticated, redirect to login with OAuth code
+          const code = searchParams.get('code');
+          const state = searchParams.get('state');
+          const platform = searchParams.get('platform') || 'facebook';
+          
+          // Store OAuth data temporarily
+          sessionStorage.setItem('pending_oauth_code', code || '');
+          sessionStorage.setItem('pending_oauth_state', state || '');
+          sessionStorage.setItem('pending_oauth_platform', platform);
+          
+          setStatus('error');
+          setErrorMessage('Please log in first to connect your account');
+          setTimeout(() => {
+            navigate('/login', { replace: true });
+          }, 2000);
+          return;
         }
 
         // Store the OAuth code temporarily (in production, exchange for token on backend)
