@@ -69,7 +69,7 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
         }
 
         // For Facebook/Instagram, try to fetch page details using Graph API
-        if (platform === 'facebook' || platform === 'instagram') {
+        if (platform === 'facebook') {
           try {
             // Exchange code for access token using client-side flow (not recommended for production)
             const tokenResponse = await fetch(
@@ -129,6 +129,66 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
             }
           } catch (error) {
             console.error('[OAuth] Failed to fetch Facebook page details:', error);
+            // Fallback to basic OAuth data
+            const oauthData = {
+              userId,
+              platform,
+              authCode: code,
+              state,
+              connectedAt: new Date().toISOString(),
+              status: 'pending_token_exchange',
+            };
+            
+            localStorage.setItem(`oauth_${platform}`, JSON.stringify(oauthData));
+          }
+        } else if (platform === 'instagram') {
+          try {
+            // Exchange code for access token
+            const tokenResponse = await fetch(
+              `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${import.meta.env.VITE_META_APP_ID}&redirect_uri=${encodeURIComponent(window.location.origin + '/auth/callback/instagram')}&client_secret=${import.meta.env.VITE_META_APP_SECRET}&code=${code}`
+            );
+            const tokenData = await tokenResponse.json();
+
+            if (tokenData.error) {
+              throw new Error(tokenData.error.message);
+            }
+
+            // Get user's Instagram business accounts
+            const igResponse = await fetch(
+              `https://graph.facebook.com/v18.0/me/accounts?fields=instagram_business_account{id,name,username,profile_picture_url,followers_count}&access_token=${tokenData.access_token}`
+            );
+            const igData = await igResponse.json();
+
+            if (igData.data && igData.data.length > 0) {
+              const page = igData.data[0];
+              const igAccount = page.instagram_business_account;
+              
+              if (igAccount) {
+                const oauthData = {
+                  userId,
+                  platform,
+                  accessToken: tokenData.access_token,
+                  pageId: page.id,
+                  instagramAccountId: igAccount.id,
+                  accountName: igAccount.username || igAccount.name || 'Instagram Business',
+                  username: igAccount.username,
+                  profileImage: igAccount.profile_picture_url,
+                  followers: igAccount.followers_count || 0,
+                  state,
+                  connectedAt: new Date().toISOString(),
+                  status: 'connected',
+                };
+                
+                localStorage.setItem(`oauth_${platform}`, JSON.stringify(oauthData));
+                console.log('[OAuth] Successfully fetched Instagram account:', igAccount.username, 'Followers:', igAccount.followers_count);
+              } else {
+                throw new Error('No Instagram business account found for this page');
+              }
+            } else {
+              throw new Error('No Facebook pages with Instagram accounts found');
+            }
+          } catch (error) {
+            console.error('[OAuth] Failed to fetch Instagram account details:', error);
             // Fallback to basic OAuth data
             const oauthData = {
               userId,
