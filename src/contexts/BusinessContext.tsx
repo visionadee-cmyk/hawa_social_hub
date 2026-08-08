@@ -57,34 +57,44 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
     if (!db) return;
 
     try {
-      // Fetch all social accounts from Firestore
+      // Get current user ID from localStorage
+      const userId = localStorage.getItem('userId');
+      if (!userId) {
+        console.warn('No userId found in localStorage, cannot fetch social accounts');
+        return;
+      }
+
+      // Fetch social accounts for this user only
       const socialAccountsRef = collection(db, 'socialAccounts');
       const snapshot = await getDocs(socialAccountsRef);
       
-      const accounts: SocialAccount[] = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          businessId: data.businessId || data.userId || '',
-          platform: data.platform,
-          accountId: data.accountId || doc.id,
-          accountName: data.accountName || data.pageName || data.username || 'Unknown',
-          username: data.username,
-          profileImage: data.profileImage,
-          followers: data.followers || 0,
-          accessToken: data.accessToken,
-          refreshToken: data.refreshToken,
-          tokenExpiresAt: data.tokenExpiresAt,
-          status: data.status || 'connected',
-          lastSyncAt: data.lastSyncAt || null,
-          lastSuccessfulPostAt: data.lastSuccessfulPostAt || null,
-          connectionError: data.connectionError,
-          createdAt: data.createdAt || data.connectedAt ? new Date(data.connectedAt) : new Date(),
-          updatedAt: data.updatedAt || new Date(),
-        };
-      });
+      const accounts: SocialAccount[] = snapshot.docs
+        .filter(doc => doc.data().userId === userId)
+        .map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            businessId: data.businessId || data.userId || '',
+            platform: data.platform,
+            accountId: data.accountId || doc.id,
+            accountName: data.accountName || data.pageName || data.username || 'Unknown',
+            username: data.username,
+            profileImage: data.profileImage,
+            followers: data.followers || 0,
+            accessToken: data.accessToken,
+            refreshToken: data.refreshToken,
+            tokenExpiresAt: data.tokenExpiresAt,
+            status: data.status || 'connected',
+            lastSyncAt: data.lastSyncAt || null,
+            lastSuccessfulPostAt: data.lastSuccessfulPostAt || null,
+            connectionError: data.connectionError,
+            createdAt: data.createdAt || data.connectedAt ? new Date(data.connectedAt) : new Date(),
+            updatedAt: data.updatedAt || new Date(),
+          };
+        });
 
       setSocialAccounts(accounts);
+      console.log('[BusinessContext] Refreshed social accounts:', accounts.length);
     } catch (error) {
       console.error('Failed to refresh social accounts:', error);
     }
