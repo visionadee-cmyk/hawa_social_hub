@@ -2,6 +2,8 @@ import type { SocialPlatformAdapter, PublishData, PublishResult, PostStatus } fr
 import type { SocialAccount, PlatformMetrics, MediaItem } from '../../types';
 import { isDemoMode, config } from '../../config';
 import { demoService } from '../../services/demo';
+import { getFirebaseFirestore } from '../../firebase';
+import { deleteDoc, doc } from 'firebase/firestore';
 
 export class FacebookAdapter implements SocialPlatformAdapter {
   platform = 'facebook';
@@ -37,8 +39,18 @@ export class FacebookAdapter implements SocialPlatformAdapter {
       return demoService.disconnectAccount(accountId);
     }
 
-    // Production: Revoke Facebook access token
-    throw new Error('Facebook disconnect not implemented in production mode yet');
+    // Production: Delete the account from Firestore
+    const db = getFirebaseFirestore();
+    if (!db) {
+      throw new Error('Firestore not initialized');
+    }
+
+    try {
+      await deleteDoc(doc(db, 'socialAccounts', accountId));
+    } catch (error) {
+      console.error('Failed to delete Facebook account from Firestore:', error);
+      throw new Error('Failed to disconnect Facebook account');
+    }
   }
 
   async refreshToken(accountId: string): Promise<void> {

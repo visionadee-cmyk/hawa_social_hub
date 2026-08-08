@@ -2,6 +2,8 @@ import type { SocialPlatformAdapter, PublishData, PublishResult, PostStatus } fr
 import type { SocialAccount, PlatformMetrics, MediaItem } from '../../types';
 import { isDemoMode, config } from '../../config';
 import { demoService } from '../../services/demo';
+import { getFirebaseFirestore } from '../../firebase';
+import { deleteDoc, doc } from 'firebase/firestore';
 
 export class InstagramAdapter implements SocialPlatformAdapter {
   platform = 'instagram';
@@ -37,8 +39,18 @@ export class InstagramAdapter implements SocialPlatformAdapter {
       return demoService.disconnectAccount(accountId);
     }
 
-    // Production: Revoke Instagram access token
-    throw new Error('Instagram disconnect not implemented in production mode yet');
+    // Production: Delete the account from Firestore
+    const db = getFirebaseFirestore();
+    if (!db) {
+      throw new Error('Firestore not initialized');
+    }
+
+    try {
+      await deleteDoc(doc(db, 'socialAccounts', accountId));
+    } catch (error) {
+      console.error('Failed to delete Instagram account from Firestore:', error);
+      throw new Error('Failed to disconnect Instagram account');
+    }
   }
 
   async refreshToken(accountId: string): Promise<void> {
