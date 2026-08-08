@@ -50,14 +50,14 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
           throw new Error('Firestore not initialized');
         }
 
-        // Check Firebase auth state directly
-        const auth = getFirebaseAuth();
-        const currentUser = auth?.currentUser;
+        // Use localStorage userId instead of Firebase auth state
+        // This works because userId is stored in localStorage during login
+        const userId = localStorage.getItem('userId');
         
-        console.log('Firebase auth state:', { currentUser, userId: currentUser?.uid });
+        console.log('OAuth callback userId from localStorage:', userId);
         
-        if (!currentUser) {
-          // User not authenticated in Firebase, redirect to login with OAuth code
+        if (!userId) {
+          // User not authenticated, redirect to login with OAuth code
           const code = searchParams.get('code');
           const state = searchParams.get('state');
           
@@ -73,8 +73,6 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
           }, 2000);
           return;
         }
-
-        const userId = currentUser.uid;
 
         // Store the OAuth code temporarily (in production, exchange for token on backend)
         const socialAccountRef = doc(db, 'socialAccounts', `${userId}_${platform}`);
