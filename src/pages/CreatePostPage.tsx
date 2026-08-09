@@ -103,9 +103,41 @@ export default function CreatePostPage() {
 
     setLoading(true);
     try {
-      // In demo mode, simulate publishing
+      // In demo mode, simulate publishing and store post in localStorage
       if (isDemoMode) {
         await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Create post object
+        const newPost = {
+          id: `demo-post-${Date.now()}`,
+          businessId: 'demo-business-1',
+          createdBy: 'demo-user-1',
+          caption,
+          hashtags,
+          mentions,
+          media: media.map(m => ({
+            id: m.id,
+            type: m.type as 'image' | 'video',
+            url: m.url,
+            thumbnailUrl: m.url,
+            width: 800,
+            height: 600,
+            size: m.size,
+            format: m.format,
+            order: m.order,
+          })),
+          platforms: selectedPlatforms,
+          status: (isScheduling ? 'scheduled' : 'published') as 'draft' | 'scheduled' | 'publishing' | 'published' | 'partially_published' | 'failed' | 'cancelled',
+          publishedAt: isScheduling ? undefined : new Date(),
+          scheduledAt: isScheduling ? new Date(`${scheduledDate!.toISOString().split('T')[0]}T${scheduledTime}`) : undefined,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        // Store in localStorage
+        const existingPosts = JSON.parse(localStorage.getItem('demoPosts') || '[]');
+        localStorage.setItem('demoPosts', JSON.stringify([newPost, ...existingPosts]));
+        
         navigate('/posts');
       } else {
         // Production: Create post in Firestore and trigger publishing jobs

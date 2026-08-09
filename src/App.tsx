@@ -10,6 +10,7 @@ import OnboardingPage from './pages/OnboardingPage';
 import MainLayout from './layouts/MainLayout';
 import DashboardPage from './pages/DashboardPage';
 import CreatePostPage from './pages/CreatePostPage';
+import PostsPage from './pages/PostsPage';
 import SocialAccountsPage from './pages/SocialAccountsPage';
 import FacebookCallbackPage from './pages/FacebookCallbackPage';
 import InstagramCallbackPage from './pages/InstagramCallbackPage';
@@ -45,7 +46,7 @@ function App() {
               <Route path="/create-post" element={<CreatePostPage />} />
               <Route path="/social-accounts" element={<SocialAccountsPage />} />
               <Route path="/calendar" element={<div className="p-8"><h1 className="text-2xl font-bold">Calendar</h1><p className="text-gray-600">Content calendar coming soon</p></div>} />
-              <Route path="/posts" element={<div className="p-8"><h1 className="text-2xl font-bold">Posts</h1><p className="text-gray-600">Posts page coming soon</p></div>} />
+              <Route path="/posts" element={<PostsPage />} />
               <Route path="/analytics" element={<div className="p-8"><h1 className="text-2xl font-bold">Analytics</h1><p className="text-gray-600">Analytics page coming soon</p></div>} />
               <Route path="/campaigns" element={<div className="p-8"><h1 className="text-2xl font-bold">Campaigns</h1><p className="text-gray-600">Campaigns page coming soon</p></div>} />
               <Route path="/media" element={<div className="p-8"><h1 className="text-2xl font-bold">Media Library</h1><p className="text-gray-600">Media library coming soon</p></div>} />
