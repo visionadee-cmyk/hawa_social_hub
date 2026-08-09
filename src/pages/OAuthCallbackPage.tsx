@@ -87,8 +87,12 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
             );
             const pagesData = await pagesResponse.json();
 
+            console.log('[OAuth Facebook] Pages returned:', pagesData.data?.map(p => ({ id: p.id, name: p.name })));
+
             if (pagesData.data && pagesData.data.length > 0) {
-              const page = pagesData.data[0];
+              // Try to find Hawa Daily page first, otherwise use first page
+              const page = pagesData.data.find(p => p.name === 'Hawa Daily') || pagesData.data[0];
+              console.log('[OAuth Facebook] Selected page:', page.name, 'ID:', page.id);
               
               // Fetch page insights for followers/likes
               let followers = 0;
