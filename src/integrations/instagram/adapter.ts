@@ -16,7 +16,7 @@ export class InstagramAdapter implements SocialPlatformAdapter {
     // Production: Initiate Instagram OAuth flow using Facebook Login
     // Instagram Business accounts use Facebook Login, not Instagram Basic Display API
     const redirectUri = `${window.location.origin}/auth/callback/instagram`;
-    const scope = 'pages_show_list,instagram_basic,instagram_manage_insights,instagram_manage_comments,pages_read_engagement';
+    const scope = 'pages_show_list,pages_read_engagement,pages_manage_posts,pages_manage_engagement,instagram_basic,instagram_manage_insights,instagram_manage_comments,instagram_content_publish';
     const state = Math.random().toString(36).substring(2, 15);
     
     // Store state for verification
