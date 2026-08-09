@@ -96,24 +96,19 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
                                     pagesData.data.find(p => p.name.toLowerCase().includes('hawa daily'));
               const page = hawaDailyPage || pagesData.data[0];
               console.log('[OAuth Facebook] Selected page:', page.name, 'ID:', page.id);
-              
-              // Fetch page insights for followers/likes
+
+              // Fetch page info for follower count
               let followers = 0;
               try {
-                const insightsResponse = await fetch(
-                  `https://graph.facebook.com/v18.0/${page.id}/insights?metric=page_fan_adds,page_impressions,page_post_engagements&period=day&access_token=${tokenData.access_token}`
-                );
-                const insightsData = await insightsResponse.json();
-                
-                // Try to get follower count from page info as fallback
                 const pageInfoResponse = await fetch(
                   `https://graph.facebook.com/v18.0/${page.id}?fields=fan_count,followers_count&access_token=${tokenData.access_token}`
                 );
                 const pageInfoData = await pageInfoResponse.json();
-                
+                console.log('[OAuth Facebook] Page info response:', pageInfoData);
                 followers = pageInfoData.fan_count || pageInfoData.followers_count || 0;
-              } catch (insightError) {
-                console.error('[OAuth] Failed to fetch page insights:', insightError);
+                console.log('[OAuth Facebook] Followers count:', followers);
+              } catch (pageError) {
+                console.error('[OAuth] Failed to fetch page info:', pageError);
               }
               
               const oauthData = {
