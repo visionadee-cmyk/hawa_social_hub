@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBusiness } from '../contexts/BusinessContext';
+import { useAuth } from '../contexts/AuthContext';
 import { isDemoMode } from '../config';
 import { validateCaption, validateHashtags } from '../utils/validators';
 import { extractHashtags } from '../utils/formatters';
+import { postsService } from '../services/posts';
 import { Loader2, Upload, X, Calendar, Send, Eye, Hash, AtSign, Image as ImageIcon, Video, Check } from 'lucide-react';
 import type { SocialPlatform, MediaItem } from '../types';
 
 export default function CreatePostPage() {
   const navigate = useNavigate();
   const { socialAccounts } = useBusiness();
+  const { user } = useAuth();
   const [caption, setCaption] = useState('');
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [mentions, setMentions] = useState<string[]>([]);
@@ -140,7 +143,35 @@ export default function CreatePostPage() {
         
         navigate('/posts');
       } else {
-        // Production: Create post in Firestore and trigger publishing jobs
+        // Production: Create post in Firestore
+        if (!user) {
+          setError('You must be logged in to create posts');
+          return;
+        }
+
+        const newPost = await postsService.createPost({
+          businessId: user.uid, // Using user ID as business ID for now
+          createdBy: user.uid,
+          caption,
+          hashtags,
+          mentions,
+          media: media.map(m => ({
+            id: m.id,
+            type: m.type as 'image' | 'video',
+            url: m.url,
+            thumbnailUrl: m.url,
+            width: 800,
+            height: 600,
+            size: m.size,
+            format: m.format,
+            order: m.order,
+          })),
+          platforms: selectedPlatforms,
+          status: (isScheduling ? 'scheduled' : 'published') as 'draft' | 'scheduled' | 'publishing' | 'published' | 'partially_published' | 'failed' | 'cancelled',
+          publishedAt: isScheduling ? undefined : new Date(),
+          scheduledAt: isScheduling ? new Date(`${scheduledDate!.toISOString().split('T')[0]}T${scheduledTime}`) : undefined,
+        });
+
         navigate('/posts');
       }
     } catch (err: any) {
