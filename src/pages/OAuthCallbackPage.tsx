@@ -90,8 +90,8 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
             console.log('[OAuth Facebook] Pages returned:', pagesData.data?.map(p => ({ id: p.id, name: p.name })));
 
             if (pagesData.data && pagesData.data.length > 0) {
-              // Try to find Hawa Daily page first, otherwise use first page
-              const page = pagesData.data.find(p => p.name === 'Hawa Daily') || pagesData.data[0];
+              // Try to find Hawa Daily page first (case-insensitive), otherwise use first page
+              const page = pagesData.data.find(p => p.name.toLowerCase() === 'hawa daily') || pagesData.data[0];
               console.log('[OAuth Facebook] Selected page:', page.name, 'ID:', page.id);
               
               // Fetch page insights for followers/likes
@@ -169,8 +169,8 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
             console.log('[OAuth Instagram] Pages returned:', igData.data?.map(p => ({ id: p.id, name: p.name })));
 
             if (igData.data && igData.data.length > 0) {
-              // Try to find Hawa Daily page first, otherwise use first page
-              const page = igData.data.find(p => p.name === 'Hawa Daily') || igData.data[0];
+              // Try to find Hawa Daily page first (case-insensitive), otherwise use first page
+              const page = igData.data.find(p => p.name.toLowerCase() === 'hawa daily') || igData.data[0];
               console.log('[OAuth Instagram] Selected page:', page.name, 'ID:', page.id);
               const igAccount = page.instagram_business_account;
               
