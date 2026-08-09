@@ -166,9 +166,12 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
             const igData = await igResponse.json();
 
             console.log('[OAuth Instagram] Pages response:', igData);
+            console.log('[OAuth Instagram] Pages returned:', igData.data?.map(p => ({ id: p.id, name: p.name })));
 
             if (igData.data && igData.data.length > 0) {
-              const page = igData.data[0];
+              // Try to find Hawa Daily page first, otherwise use first page
+              const page = igData.data.find(p => p.name === 'Hawa Daily') || igData.data[0];
+              console.log('[OAuth Instagram] Selected page:', page.name, 'ID:', page.id);
               const igAccount = page.instagram_business_account;
               
               console.log('[OAuth Instagram] Page:', page.name, 'Instagram account:', igAccount);
