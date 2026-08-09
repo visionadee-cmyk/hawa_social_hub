@@ -91,8 +91,9 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
             console.log('[OAuth Facebook] All page names:', pagesData.data?.map(p => p.name).join(', '));
 
             if (pagesData.data && pagesData.data.length > 0) {
-              // Try to find Hawa Daily page first (case-insensitive, full phrase), otherwise use first page
-              const hawaDailyPage = pagesData.data.find(p => p.name.toLowerCase().includes('hawa daily'));
+              // Try to find Hawa Daily page by ID first, then by name (case-insensitive), otherwise use first page
+              const hawaDailyPage = pagesData.data.find(p => p.id === '1233961369780982') ||
+                                    pagesData.data.find(p => p.name.toLowerCase().includes('hawa daily'));
               const page = hawaDailyPage || pagesData.data[0];
               console.log('[OAuth Facebook] Selected page:', page.name, 'ID:', page.id);
               
@@ -172,8 +173,9 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
             console.log('[OAuth Instagram] All page names:', igData.data?.map(p => p.name).join(', '));
 
             if (igData.data && igData.data.length > 0) {
-              // Try to find Hawa Daily page first (case-insensitive, full phrase), otherwise use first page
-              const hawaDailyPage = igData.data.find(p => p.name.toLowerCase().includes('hawa daily'));
+              // Try to find Hawa Daily page by ID first, then by name (case-insensitive), otherwise use first page
+              const hawaDailyPage = igData.data.find(p => p.id === '1233961369780982') ||
+                                    igData.data.find(p => p.name.toLowerCase().includes('hawa daily'));
               const page = hawaDailyPage || igData.data[0];
               console.log('[OAuth Instagram] Selected page:', page.name, 'ID:', page.id);
               const igAccount = page.instagram_business_account;
