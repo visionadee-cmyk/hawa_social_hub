@@ -149,7 +149,7 @@ export default function CreatePostPage() {
           return;
         }
 
-        const newPost = await postsService.createPost({
+        const postData: any = {
           businessId: user.id, // Using user ID as business ID for now
           createdBy: user.id,
           caption,
@@ -168,9 +168,17 @@ export default function CreatePostPage() {
           })),
           platforms: selectedPlatforms,
           status: (isScheduling ? 'scheduled' : 'published') as 'draft' | 'scheduled' | 'publishing' | 'published' | 'partially_published' | 'failed' | 'cancelled',
-          publishedAt: isScheduling ? undefined : new Date(),
-          scheduledAt: isScheduling ? new Date(`${scheduledDate!.toISOString().split('T')[0]}T${scheduledTime}`) : undefined,
-        });
+        };
+
+        if (isScheduling) {
+          postData.publishedAt = undefined;
+          postData.scheduledAt = new Date(`${scheduledDate!.toISOString().split('T')[0]}T${scheduledTime}`);
+        } else {
+          postData.publishedAt = new Date();
+          // Don't include scheduledAt when not scheduling
+        }
+
+        const newPost = await postsService.createPost(postData);
 
         navigate('/posts');
       }
