@@ -91,8 +91,9 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
             console.log('[OAuth Facebook] All page names:', pagesData.data?.map(p => p.name).join(', '));
 
             if (pagesData.data && pagesData.data.length > 0) {
-              // Try to find Hawa Daily page by ID first, then by name (case-insensitive), otherwise use first page
-              const hawaDailyPage = pagesData.data.find(p => p.id === '1233961369780982') ||
+              // Try to find a known Hawa page by ID first, then by name (case-insensitive), otherwise use first page
+              const hawaPageIds = ['1233961369780982', '61591869200851'];
+              const hawaDailyPage = pagesData.data.find(p => hawaPageIds.includes(p.id)) ||
                                     pagesData.data.find(p => p.name.toLowerCase().includes('hawa daily'));
               const page = hawaDailyPage || pagesData.data[0];
               console.log('[OAuth Facebook] Selected page:', page.name, 'ID:', page.id);
