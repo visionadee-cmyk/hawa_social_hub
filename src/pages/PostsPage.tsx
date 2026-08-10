@@ -1,65 +1,38 @@
 import { useState, useEffect } from 'react';
 import { isDemoMode } from '../config';
 import { demoPosts } from '../services/demo';
-import { postsService } from '../services/posts';
-import { useAuth } from '../contexts/AuthContext';
 import { Calendar, Eye, MessageCircle, Share2, Heart, Trash2, Edit } from 'lucide-react';
 import type { Post } from '../types';
 
 export default function PostsPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [filter, setFilter] = useState<'all' | 'published' | 'scheduled' | 'draft'>('all');
-  const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
 
   useEffect(() => {
-    const loadPosts = async () => {
-      setLoading(true);
-      if (isDemoMode) {
-        // Load posts from localStorage or use demo posts
-        const storedPosts = JSON.parse(localStorage.getItem('demoPosts') || '[]');
-        if (storedPosts.length > 0) {
-          setPosts(storedPosts as Post[]);
-        } else {
-          setPosts(demoPosts as Post[]);
-        }
+    if (isDemoMode) {
+      // Load posts from localStorage or use demo posts
+      const storedPosts = JSON.parse(localStorage.getItem('demoPosts') || '[]');
+      if (storedPosts.length > 0) {
+        setPosts(storedPosts as Post[]);
       } else {
-        // In production, load from Firestore
-        try {
-          console.log('[PostsPage] Loading posts for user:', user?.id);
-          if (user) {
-            const userPosts = await postsService.getPostsByUser(user.id);
-            console.log('[PostsPage] Loaded posts:', userPosts.length);
-            setPosts(userPosts);
-          }
-        } catch (error) {
-          console.error('[PostsPage] Error loading posts:', error);
-          setPosts([]);
-        }
+        setPosts(demoPosts as Post[]);
       }
-      setLoading(false);
-    };
-
-    loadPosts();
-  }, [user]);
+    } else {
+      // In production, load from Firestore
+      setPosts([]);
+    }
+  }, []);
 
   const filteredPosts = posts.filter(post => {
     if (filter === 'all') return true;
     return post.status === filter;
   });
 
-  const handleDeletePost = async (postId: string) => {
+  const handleDeletePost = (postId: string) => {
     if (isDemoMode) {
       const updatedPosts = posts.filter(p => p.id !== postId);
       setPosts(updatedPosts);
       localStorage.setItem('demoPosts', JSON.stringify(updatedPosts));
-    } else {
-      try {
-        await postsService.deletePost(postId);
-        setPosts(posts.filter(p => p.id !== postId));
-      } catch (error) {
-        console.error('Error deleting post:', error);
-      }
     }
   };
 

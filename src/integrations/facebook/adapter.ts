@@ -15,7 +15,7 @@ export class FacebookAdapter implements SocialPlatformAdapter {
 
     // Production: Initiate Facebook OAuth flow
     const redirectUri = `${window.location.origin}/auth/callback/facebook`;
-    const scope = 'pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish';
+    const scope = 'pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish';
     const state = Math.random().toString(36).substring(2, 15);
     
     // Store state for verification
@@ -90,94 +90,8 @@ export class FacebookAdapter implements SocialPlatformAdapter {
     }
 
     // Production: Publish to Facebook using Graph API
-    // Note: This method doesn't have accessToken in the interface, so we need to get it from somewhere
-    // For now, this will need to be refactored to accept accessToken or use a different approach
-    const { caption, media } = data;
-
-    try {
-      if (media && media.length > 0) {
-        // Publish with media - requires accessToken which is not in PublishData
-        // This is a limitation of the current interface design
-        return {
-          success: false,
-          error: 'Facebook publishing requires accessToken which is not available in PublishData interface',
-        };
-      } else {
-        // Publish text-only post - also requires accessToken
-        return {
-          success: false,
-          error: 'Facebook publishing requires accessToken which is not available in PublishData interface',
-        };
-      }
-    } catch (error: any) {
-      return {
-        success: false,
-        error: error.message || 'Facebook publishing failed',
-        errorDetails: error,
-      };
-    }
-  }
-
-  async publishPost(data: { caption: string; media: MediaItem[]; accessToken: string; pageId: string }): Promise<{ platformPostId: string; status: string }> {
-    const { caption, media, accessToken, pageId } = data;
-
-    if (media && media.length > 0) {
-      // Publish with media
-      const firstMedia = media[0];
-      const formData = new FormData();
-      formData.append('caption', caption || '');
-      formData.append('url', firstMedia.url);
-      formData.append('published', 'true');
-
-      const response = await fetch(
-        `https://graph.facebook.com/v18.0/${pageId}/photos`,
-        {
-          method: 'POST',
-          body: formData,
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(`Facebook publishing failed: ${error.error?.message || 'Unknown error'}`);
-      }
-
-      const result = await response.json();
-      return {
-        platformPostId: result.id,
-        status: 'published',
-      };
-    } else {
-      // Publish text-only post
-      const response = await fetch(
-        `https://graph.facebook.com/v18.0/${pageId}/feed`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            message: caption || '',
-            published: 'true',
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(`Facebook publishing failed: ${error.error?.message || 'Unknown error'}`);
-      }
-
-      const result = await response.json();
-      return {
-        platformPostId: result.id,
-        status: 'published',
-      };
-    }
+    // POST /{page-id}/feed or /{page-id}/photos for media
+    throw new Error('Facebook publishing not implemented in production mode yet');
   }
 
   async getPostStatus(accountId: string, platformPostId: string): Promise<PostStatus> {

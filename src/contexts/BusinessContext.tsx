@@ -53,30 +53,20 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    try {
-      const db = getFirebaseFirestore();
-      console.log('[BusinessContext] db instance:', db);
-      
-      if (!db) {
-        console.warn('[BusinessContext] db is undefined, cannot fetch social accounts');
-        return;
-      }
+    const db = getFirebaseFirestore();
+    if (!db) return;
 
+    try {
       // Get current user ID from localStorage
       const userId = localStorage.getItem('userId');
       if (!userId) {
-        console.warn('[BusinessContext] No userId found in localStorage, cannot fetch social accounts');
+        console.warn('No userId found in localStorage, cannot fetch social accounts');
         return;
       }
 
-      console.log('[BusinessContext] Fetching social accounts for userId:', userId);
-
       // Fetch social accounts for this user only
       const socialAccountsRef = collection(db, 'socialAccounts');
-      console.log('[BusinessContext] socialAccountsRef:', socialAccountsRef);
-      
       const snapshot = await getDocs(socialAccountsRef);
-      console.log('[BusinessContext] Snapshot docs:', snapshot.docs.length);
       
       const accounts: SocialAccount[] = snapshot.docs
         .filter(doc => doc.data().userId === userId)
@@ -106,8 +96,7 @@ export function BusinessProvider({ children }: { children: ReactNode }) {
       setSocialAccounts(accounts);
       console.log('[BusinessContext] Refreshed social accounts:', accounts.length);
     } catch (error) {
-      console.error('[BusinessContext] Failed to refresh social accounts:', error);
-      console.error('[BusinessContext] Error details:', JSON.stringify(error, null, 2));
+      console.error('Failed to refresh social accounts:', error);
     }
   };
 

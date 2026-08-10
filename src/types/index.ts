@@ -445,6 +445,7 @@ export interface AppConfig {
     cloudName: string;
     apiKey: string;
     apiSecret: string;
+    uploadPreset: string;
   };
   meta: {
     appId: string;

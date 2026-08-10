@@ -1,21 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBusiness } from '../contexts/BusinessContext';
-import { useAuth } from '../contexts/AuthContext';
-import { isDemoMode } from '../config';
+import { isDemoMode, config } from '../config';
 import { validateCaption, validateHashtags } from '../utils/validators';
 import { extractHashtags } from '../utils/formatters';
-import { postsService } from '../services/posts';
-import { cloudinaryService } from '../services/cloudinary';
-import { facebookAdapter } from '../integrations/facebook/adapter';
-import { instagramAdapter } from '../integrations/instagram/adapter';
+import { uploadToCloudinary } from '../services/cloudinary';
 import { Loader2, Upload, X, Calendar, Send, Eye, Hash, AtSign, Image as ImageIcon, Video, Check } from 'lucide-react';
 import type { SocialPlatform, MediaItem } from '../types';
 
 export default function CreatePostPage() {
   const navigate = useNavigate();
   const { socialAccounts } = useBusiness();
-  const { user } = useAuth();
   const [caption, setCaption] = useState('');
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [mentions, setMentions] = useState<string[]>([]);
@@ -25,6 +20,7 @@ export default function CreatePostPage() {
   const [scheduledTime, setScheduledTime] = useState<string>('');
   const [isScheduling, setIsScheduling] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewTab, setPreviewTab] = useState<SocialPlatform | 'all'>('all');
 
@@ -46,25 +42,49 @@ export default function CreatePostPage() {
     }
   };
 
-  const handleMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const newMedia: MediaItem = {
-          id: `media-${Date.now()}-${Math.random()}`,
-          type: file.type.startsWith('video/') ? 'video' : 'image',
-          url: event.target?.result as string,
-          size: file.size,
-          format: file.type.split('/')[1],
-          order: media.length,
-        };
-        setMedia(prev => [...prev, newMedia]);
-      };
-      reader.readAsDataURL(file);
-    });
+    setUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        if (isDemoMode) {
+          // Demo mode: use local preview
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const newMedia: MediaItem = {
+              id: `media-${Date.now()}-${Math.random()}`,
+              type: file.type.startsWith('video/') ? 'video' : 'image',
+              url: event.target?.result as string,
+              size: file.size,
+              format: file.type.split('/')[1],
+              order: media.length,
+            };
+            setMedia(prev => [...prev, newMedia]);
+          };
+          reader.readAsDataURL(file);
+        } else {
+          // Production: upload to Cloudinary
+          const uploadResult = await uploadToCloudinary(file);
+          const newMedia: MediaItem = {
+            id: `media-${Date.now()}-${Math.random()}`,
+            type: uploadResult.resourceType,
+            url: uploadResult.url,
+            size: uploadResult.size,
+            format: uploadResult.format,
+            order: media.length,
+            width: uploadResult.width,
+            height: uploadResult.height,
+          };
+          setMedia(prev => [...prev, newMedia]);
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload media');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleRemoveMedia = (mediaId: string) => {
@@ -146,130 +166,8 @@ export default function CreatePostPage() {
         
         navigate('/posts');
       } else {
-        // Production: Upload images to Cloudinary and create post in Firestore
-        if (!user) {
-          setError('You must be logged in to create posts');
-          return;
-        }
-
-        try {
-          // Upload images to Cloudinary if they're base64
-          const uploadedMedia = await Promise.all(
-            media.map(async (m) => {
-              if (m.url.startsWith('data:')) {
-                console.log('[CreatePost] Uploading image to Cloudinary...');
-                const uploadResult = await cloudinaryService.uploadBase64(m.url);
-                console.log('[CreatePost] Upload successful:', uploadResult.url);
-                return {
-                  ...m,
-                  url: uploadResult.url,
-                  thumbnailUrl: uploadResult.url,
-                  cloudinaryPublicId: uploadResult.publicId,
-                  width: uploadResult.width,
-                  height: uploadResult.height,
-                  size: uploadResult.size,
-                  format: uploadResult.format,
-                };
-              }
-              return m;
-            })
-          );
-
-          const postData: any = {
-            businessId: user.id, // Using user ID as business ID for now
-            createdBy: user.id,
-            caption: caption || '',
-            hashtags: Array.isArray(hashtags) ? hashtags : [],
-            mentions: Array.isArray(mentions) ? mentions : [],
-            media: uploadedMedia.map(m => ({
-              id: m.id || '',
-              type: m.type || 'image',
-              url: m.url || '',
-              thumbnailUrl: m.thumbnailUrl || m.url || '',
-              cloudinaryPublicId: m.cloudinaryPublicId || '',
-              width: m.width || 800,
-              height: m.height || 600,
-              size: m.size || 0,
-              format: m.format || '',
-              order: m.order || 0,
-            })),
-            platforms: Array.isArray(selectedPlatforms) ? selectedPlatforms : [],
-            status: (isScheduling ? 'scheduled' : 'publishing') as 'draft' | 'scheduled' | 'publishing' | 'published' | 'partially_published' | 'failed' | 'cancelled',
-          };
-
-          if (isScheduling) {
-            postData.publishedAt = null;
-            postData.scheduledAt = new Date(`${scheduledDate!.toISOString().split('T')[0]}T${scheduledTime}`);
-          } else {
-            postData.publishedAt = new Date();
-            // Don't include scheduledAt when not scheduling
-          }
-
-          console.log('[CreatePost] Data to send to Firestore:', JSON.stringify(postData, null, 2));
-          console.log('[CreatePost] Media array:', JSON.stringify(postData.media, null, 2));
-
-          const newPost = await postsService.createPost(postData);
-          console.log('[CreatePost] Post created in Firestore with ID:', newPost.id);
-
-          // Publish to social platforms if not scheduling
-          if (!isScheduling && selectedPlatforms.length > 0) {
-            console.log('[CreatePost] Publishing to platforms:', selectedPlatforms);
-            
-            const publishResults = await Promise.allSettled(
-              selectedPlatforms.map(async (platform) => {
-                const account = socialAccounts.find(a => a.platform === platform);
-                if (!account) {
-                  throw new Error(`No connected account found for ${platform}`);
-                }
-
-                console.log(`[CreatePost] Publishing to ${platform}...`);
-
-                if (platform === 'facebook') {
-                  await facebookAdapter.publishPost({
-                    caption,
-                    media: uploadedMedia,
-                    accessToken: account.accessToken || '',
-                    pageId: (account as any).pageId || account.accountId,
-                  });
-                } else if (platform === 'instagram') {
-                  await instagramAdapter.publishPost({
-                    caption,
-                    media: uploadedMedia,
-                    accessToken: account.accessToken || '',
-                    pageId: (account as any).instagramAccountId || (account as any).pageId || account.accountId,
-                  });
-                }
-
-                console.log(`[CreatePost] Successfully published to ${platform}`);
-                return { platform, success: true };
-              })
-            );
-
-            const failedPlatforms = publishResults
-              .filter(r => r.status === 'rejected')
-              .map(r => (r as PromiseRejectedResult).reason);
-
-            if (failedPlatforms.length > 0) {
-              console.error('[CreatePost] Failed to publish to some platforms:', failedPlatforms);
-              // Update post status to partially_published
-              await postsService.updatePost(newPost.id, {
-                status: 'partially_published',
-              });
-            } else {
-              console.log('[CreatePost] Successfully published to all platforms');
-              // Update post status to published
-              await postsService.updatePost(newPost.id, {
-                status: 'published',
-              });
-            }
-          }
-
-          navigate('/posts');
-        } catch (uploadError: any) {
-          console.error('[CreatePost] Error during upload/publish:', uploadError);
-          setError(uploadError.message || 'Failed to upload images or publish post');
-          throw uploadError; // Re-throw to be caught by outer catch
-        }
+        // Production: Create post in Firestore and trigger publishing jobs
+        navigate('/posts');
       }
     } catch (err: any) {
       setError(err.message || 'Failed to publish post');

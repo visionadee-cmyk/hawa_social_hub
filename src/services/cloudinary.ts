@@ -1,96 +1,76 @@
+import { v2 as cloudinary } from 'cloudinary';
+import { config } from '../config';
+
+// Configure Cloudinary
+if (config.cloudinary.cloudName) {
+  cloudinary.config({
+    cloud_name: config.cloudinary.cloudName,
+    api_key: config.cloudinary.apiKey,
+    api_secret: config.cloudinary.apiSecret,
+  });
+}
+
 export interface UploadResult {
-  publicId: string;
   url: string;
-  width: number;
-  height: number;
+  publicId: string;
+  resourceType: 'image' | 'video';
+  width?: number;
+  height?: number;
   format: string;
   size: number;
 }
 
-export const cloudinaryService = {
-  async uploadBase64(base64Data: string): Promise<UploadResult> {
-    // Extract the base64 data without the prefix
-    const matches = base64Data.match(/^data:image\/(\w+);base64,(.+)$/);
-    if (!matches) {
-      throw new Error('Invalid base64 image data');
+/**
+ * Upload a file to Cloudinary using unsigned upload preset
+ */
+export async function uploadToCloudinary(file: File): Promise<UploadResult> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', config.cloudinary.uploadPreset || 'hawa_social_hub');
+  formData.append('folder', 'hawa_social_hub');
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/image/upload`,
+    {
+      method: 'POST',
+      body: formData,
     }
+  );
 
-    const format = matches[1];
-    const base64String = matches[2];
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Failed to upload to Cloudinary');
+  }
 
-    // Use unsigned upload for demo mode (in production, use signed uploads)
-    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-    if (!cloudName) {
-      throw new Error('Cloudinary cloud name not configured');
-    }
+  const data = await response.json();
 
-    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'unsigned_preset';
+  return {
+    url: data.secure_url,
+    publicId: data.public_id,
+    resourceType: data.resource_type,
+    width: data.width,
+    height: data.height,
+    format: data.format,
+    size: data.bytes,
+  };
+}
 
-    const formData = new FormData();
-    formData.append('file', base64Data);
-    formData.append('upload_preset', uploadPreset);
-    formData.append('folder', 'hawa-social-hub/posts');
+/**
+ * Upload multiple files to Cloudinary
+ */
+export async function uploadMultipleToCloudinary(files: File[]): Promise<UploadResult[]> {
+  const uploadPromises = files.map(file => uploadToCloudinary(file));
+  return Promise.all(uploadPromises);
+}
 
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-      {
-        method: 'POST',
-        body: formData,
-      }
-    );
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`Cloudinary upload failed: ${error.error?.message || 'Unknown error'}`);
-    }
-
-    const result = await response.json();
-
-    return {
-      publicId: result.public_id,
-      url: result.secure_url,
-      width: result.width || 800,
-      height: result.height || 600,
-      format: result.format || format,
-      size: result.bytes || 0,
-    };
-  },
-
-  async uploadImage(file: File): Promise<UploadResult> {
-    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-    if (!cloudName) {
-      throw new Error('Cloudinary cloud name not configured');
-    }
-
-    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'unsigned_preset';
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', uploadPreset);
-    formData.append('folder', 'hawa-social-hub/posts');
-
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-      {
-        method: 'POST',
-        body: formData,
-      }
-    );
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`Cloudinary upload failed: ${error.error?.message || 'Unknown error'}`);
-    }
-
-    const result = await response.json();
-
-    return {
-      publicId: result.public_id,
-      url: result.secure_url,
-      width: result.width || 800,
-      height: result.height || 600,
-      format: result.format || 'jpg',
-      size: result.bytes || 0,
-    };
-  },
-};
+/**
+ * Delete a file from Cloudinary (requires signed API)
+ */
+export async function deleteFromCloudinary(publicId: string): Promise<void> {
+  try {
+    await cloudinary.uploader.destroy(publicId);
+  } catch (error) {
+    console.error('Failed to delete from Cloudinary:', error);
+    throw new Error('Failed to delete file from Cloudinary');
+  }
+}
