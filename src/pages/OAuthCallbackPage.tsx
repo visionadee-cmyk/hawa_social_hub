@@ -127,13 +127,27 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
               localStorage.setItem(`oauth_${platform}`, JSON.stringify(oauthData));
               console.log('[OAuth] Successfully fetched page details:', page.name, 'Followers:', followers);
             } else {
-              console.log('[OAuth Facebook] No Facebook pages found, using default name');
-              // Fallback to basic OAuth data with access token and default name
+              console.log('[OAuth Facebook] No Facebook pages found, fetching user profile');
+              // Fallback: Fetch user's profile name
+              let accountName = 'Facebook Page';
+              try {
+                const userResponse = await fetch(
+                  `https://graph.facebook.com/v18.0/me?fields=name&access_token=${tokenData.access_token}`
+                );
+                const userData = await userResponse.json();
+                if (userData.name) {
+                  accountName = userData.name;
+                  console.log('[OAuth Facebook] User profile name:', accountName);
+                }
+              } catch (userError) {
+                console.error('[OAuth Facebook] Failed to fetch user profile:', userError);
+              }
+              
               const oauthData = {
                 userId,
                 platform,
                 accessToken: tokenData.access_token,
-                accountName: 'Facebook Page',
+                accountName,
                 followers: 0,
                 state,
                 connectedAt: new Date().toISOString(),
