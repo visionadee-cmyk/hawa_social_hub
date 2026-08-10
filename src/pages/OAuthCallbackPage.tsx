@@ -93,8 +93,12 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
 
             if (pagesData.data && pagesData.data.length > 0) {
               // Try to find Hawa Daily page by ID first, then by name (case-insensitive), otherwise use first page
-              const hawaDailyPage = pagesData.data.find(p => p.id === '1233961369780982') ||
-                                    pagesData.data.find(p => p.name.toLowerCase().includes('hawa daily'));
+              const hawaDailyPageById = pagesData.data.find(p => p.id === '1233961369780982');
+              const hawaDailyPageByName = pagesData.data.find(p => p.name.toLowerCase().includes('hawa daily'));
+              console.log('[OAuth Facebook] Hawa Daily by ID:', hawaDailyPageById ? 'Found' : 'Not found');
+              console.log('[OAuth Facebook] Hawa Daily by name:', hawaDailyPageByName ? 'Found' : 'Not found');
+              
+              const hawaDailyPage = hawaDailyPageById || hawaDailyPageByName;
               const page = hawaDailyPage || pagesData.data[0];
               console.log('[OAuth Facebook] Selected page:', page.name, 'ID:', page.id);
 
