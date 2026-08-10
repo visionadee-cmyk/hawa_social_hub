@@ -152,9 +152,9 @@ export default function CreatePostPage() {
         const postData: any = {
           businessId: user.id, // Using user ID as business ID for now
           createdBy: user.id,
-          caption,
-          hashtags: hashtags || [],
-          mentions: mentions || [],
+          caption: caption || '',
+          hashtags: Array.isArray(hashtags) ? hashtags : [],
+          mentions: Array.isArray(mentions) ? mentions : [],
           media: media.map(m => ({
             id: m.id || '',
             type: m.type || 'image',
@@ -166,7 +166,7 @@ export default function CreatePostPage() {
             format: m.format || '',
             order: m.order || 0,
           })),
-          platforms: selectedPlatforms || [],
+          platforms: Array.isArray(selectedPlatforms) ? selectedPlatforms : [],
           status: (isScheduling ? 'scheduled' : 'published') as 'draft' | 'scheduled' | 'publishing' | 'published' | 'partially_published' | 'failed' | 'cancelled',
         };
 
@@ -177,6 +177,9 @@ export default function CreatePostPage() {
           postData.publishedAt = new Date();
           // Don't include scheduledAt when not scheduling
         }
+
+        console.log('[CreatePost] Data to send to Firestore:', JSON.stringify(postData, null, 2));
+        console.log('[CreatePost] Media array:', JSON.stringify(postData.media, null, 2));
 
         const newPost = await postsService.createPost(postData);
 

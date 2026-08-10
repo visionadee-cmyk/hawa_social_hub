@@ -26,12 +26,14 @@ export default function PostsPage() {
       } else {
         // In production, load from Firestore
         try {
+          console.log('[PostsPage] Loading posts for user:', user?.id);
           if (user) {
             const userPosts = await postsService.getPostsByUser(user.id);
+            console.log('[PostsPage] Loaded posts:', userPosts.length);
             setPosts(userPosts);
           }
         } catch (error) {
-          console.error('Error loading posts:', error);
+          console.error('[PostsPage] Error loading posts:', error);
           setPosts([]);
         }
       }
