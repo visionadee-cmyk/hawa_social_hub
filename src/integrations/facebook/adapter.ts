@@ -15,7 +15,7 @@ export class FacebookAdapter implements SocialPlatformAdapter {
 
     // Production: Initiate Facebook OAuth flow
     const redirectUri = `${window.location.origin}/auth/callback/facebook`;
-    const scope = 'pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish';
+    const scope = 'pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish';
     const state = Math.random().toString(36).substring(2, 15);
     
     // Store state for verification
