@@ -97,6 +97,7 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
                                     pagesData.data.find(p => p.name.toLowerCase().includes('hawa daily'));
               const page = hawaDailyPage || pagesData.data[0];
               console.log('[OAuth Facebook] Selected page:', page.name, 'ID:', page.id);
+              console.log('[OAuth Facebook] Selected page object:', page);
 
               // Fetch page info for follower count
               let followers = 0;
