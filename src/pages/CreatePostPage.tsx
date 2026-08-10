@@ -153,25 +153,25 @@ export default function CreatePostPage() {
           businessId: user.id, // Using user ID as business ID for now
           createdBy: user.id,
           caption,
-          hashtags,
-          mentions,
+          hashtags: hashtags || [],
+          mentions: mentions || [],
           media: media.map(m => ({
-            id: m.id,
-            type: m.type as 'image' | 'video',
-            url: m.url,
-            thumbnailUrl: m.url,
-            width: 800,
-            height: 600,
-            size: m.size,
-            format: m.format,
-            order: m.order,
+            id: m.id || '',
+            type: m.type || 'image',
+            url: m.url || '',
+            thumbnailUrl: m.thumbnailUrl || m.url || '',
+            width: m.width || 800,
+            height: m.height || 600,
+            size: m.size || 0,
+            format: m.format || '',
+            order: m.order || 0,
           })),
-          platforms: selectedPlatforms,
+          platforms: selectedPlatforms || [],
           status: (isScheduling ? 'scheduled' : 'published') as 'draft' | 'scheduled' | 'publishing' | 'published' | 'partially_published' | 'failed' | 'cancelled',
         };
 
         if (isScheduling) {
-          postData.publishedAt = undefined;
+          postData.publishedAt = null;
           postData.scheduledAt = new Date(`${scheduledDate!.toISOString().split('T')[0]}T${scheduledTime}`);
         } else {
           postData.publishedAt = new Date();
