@@ -229,14 +229,14 @@ export default function CreatePostPage() {
                     caption,
                     media: uploadedMedia,
                     accessToken: account.accessToken || '',
-                    pageId: account.accountId,
+                    pageId: (account as any).pageId || account.accountId,
                   });
                 } else if (platform === 'instagram') {
                   await instagramAdapter.publishPost({
                     caption,
                     media: uploadedMedia,
                     accessToken: account.accessToken || '',
-                    pageId: account.accountId,
+                    pageId: (account as any).instagramAccountId || (account as any).pageId || account.accountId,
                   });
                 }
 
