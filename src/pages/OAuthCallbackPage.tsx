@@ -157,65 +157,66 @@ export default function OAuthCallbackPage({ platform }: OAuthCallbackPageProps) 
 
             console.log('[OAuth Instagram] Access token obtained');
 
-            // Get user's Instagram business accounts
-            const igResponse = await fetch(
-              `https://graph.facebook.com/v18.0/me/accounts?fields=instagram_business_account{id,name,username,profile_picture_url,followers_count}&access_token=${tokenData.access_token}`
+            // First, try to get the user's Instagram business account directly
+            const userResponse = await fetch(
+              `https://graph.facebook.com/v18.0/me?fields=instagram_business_account{id,name,username,profile_picture_url,followers_count}&access_token=${tokenData.access_token}`
             );
-            const igData = await igResponse.json();
+            const userData = await userResponse.json();
 
-            console.log('[OAuth Instagram] Pages response:', igData);
-            console.log('[OAuth Instagram] Pages returned:', igData.data?.map(p => ({ id: p.id, name: p.name })));
-            console.log('[OAuth Instagram] All page names:', igData.data?.map(p => p.name).join(', '));
+            console.log('[OAuth Instagram] User response:', userData);
 
-            if (igData.data && igData.data.length > 0) {
-              // Try to find Hawa Daily page by ID first, then by name (case-insensitive), otherwise use first page
-              const hawaDailyPage = igData.data.find(p => p.id === '1233961369780982') ||
-                                    igData.data.find(p => p.name.toLowerCase().includes('hawa daily'));
-              const page = hawaDailyPage || igData.data[0];
-              console.log('[OAuth Instagram] Selected page:', page.name, 'ID:', page.id);
-              const igAccount = page.instagram_business_account;
-              
-              console.log('[OAuth Instagram] Page:', page.name, 'Instagram account:', igAccount);
-              
-              if (igAccount) {
-                const oauthData = {
-                  userId,
-                  platform,
-                  accessToken: tokenData.access_token,
-                  pageId: page.id,
-                  pageName: page.name,
-                  instagramAccountId: igAccount.id,
-                  accountName: igAccount.username || igAccount.name || `@${igAccount.username || 'instagram'}`,
-                  username: igAccount.username,
-                  profileImage: igAccount.profile_picture_url,
-                  followers: igAccount.followers_count || 0,
-                  state,
-                  connectedAt: new Date().toISOString(),
-                  status: 'connected',
-                };
-                
-                localStorage.setItem(`oauth_${platform}`, JSON.stringify(oauthData));
-                console.log('[OAuth Instagram] Successfully fetched Instagram account:', igAccount.username, 'Followers:', igAccount.followers_count);
-              } else {
-                console.log('[OAuth Instagram] No Instagram business account on page, using page name');
-                // Fallback to page name if no Instagram account
-                const oauthData = {
-                  userId,
-                  platform,
-                  accessToken: tokenData.access_token,
-                  pageId: page.id,
-                  pageName: page.name,
-                  accountName: page.name,
-                  followers: 0,
-                  state,
-                  connectedAt: new Date().toISOString(),
-                  status: 'connected',
-                };
-                
-                localStorage.setItem(`oauth_${platform}`, JSON.stringify(oauthData));
-              }
+            let igAccount = null;
+            let pageName = 'Instagram Business Account';
+            let pageId = '';
+
+            // Check if user has Instagram business account directly
+            if (userData.instagram_business_account) {
+              igAccount = userData.instagram_business_account;
+              console.log('[OAuth Instagram] Found Instagram business account directly:', igAccount);
             } else {
-              console.log('[OAuth Instagram] No Facebook pages found, using default name');
+              // Fallback: Try to get Facebook pages with Instagram accounts
+              const igResponse = await fetch(
+                `https://graph.facebook.com/v18.0/me/accounts?fields=instagram_business_account{id,name,username,profile_picture_url,followers_count}&access_token=${tokenData.access_token}`
+              );
+              const igData = await igResponse.json();
+
+              console.log('[OAuth Instagram] Pages response:', igData);
+              console.log('[OAuth Instagram] Pages returned:', igData.data?.map(p => ({ id: p.id, name: p.name })));
+              console.log('[OAuth Instagram] All page names:', igData.data?.map(p => p.name).join(', '));
+
+              if (igData.data && igData.data.length > 0) {
+                // Try to find Hawa Daily page by ID first, then by name (case-insensitive), otherwise use first page
+                const hawaDailyPage = igData.data.find(p => p.id === '1233961369780982') ||
+                                      igData.data.find(p => p.name.toLowerCase().includes('hawa daily'));
+                const page = hawaDailyPage || igData.data[0];
+                console.log('[OAuth Instagram] Selected page:', page.name, 'ID:', page.id);
+                pageName = page.name;
+                pageId = page.id;
+                igAccount = page.instagram_business_account;
+              }
+            }
+
+            if (igAccount) {
+              const oauthData = {
+                userId,
+                platform,
+                accessToken: tokenData.access_token,
+                pageId: pageId,
+                pageName: pageName,
+                instagramAccountId: igAccount.id,
+                accountName: igAccount.username || igAccount.name || `@${igAccount.username || 'instagram'}`,
+                username: igAccount.username,
+                profileImage: igAccount.profile_picture_url,
+                followers: igAccount.followers_count || 0,
+                state,
+                connectedAt: new Date().toISOString(),
+                status: 'connected',
+              };
+              
+              localStorage.setItem(`oauth_${platform}`, JSON.stringify(oauthData));
+              console.log('[OAuth Instagram] Successfully fetched Instagram account:', igAccount.username, 'Followers:', igAccount.followers_count);
+            } else {
+              console.log('[OAuth Instagram] No Instagram business account found, using default name');
               // Fallback to basic OAuth data with default name
               const oauthData = {
                 userId,
