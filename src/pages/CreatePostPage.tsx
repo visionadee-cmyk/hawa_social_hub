@@ -150,8 +150,8 @@ export default function CreatePostPage() {
         }
 
         const newPost = await postsService.createPost({
-          businessId: user.uid, // Using user ID as business ID for now
-          createdBy: user.uid,
+          businessId: user.id, // Using user ID as business ID for now
+          createdBy: user.id,
           caption,
           hashtags,
           mentions,

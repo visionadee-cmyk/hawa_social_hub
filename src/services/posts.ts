@@ -1,5 +1,5 @@
 import { collection, addDoc, getDocs, query, where, orderBy, deleteDoc, doc, updateDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { db } from '../firebase/firestore';
 import type { Post } from '../types';
 
 const POSTS_COLLECTION = 'posts';

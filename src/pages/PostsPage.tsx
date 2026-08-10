@@ -27,7 +27,7 @@ export default function PostsPage() {
         // In production, load from Firestore
         try {
           if (user) {
-            const userPosts = await postsService.getPostsByUser(user.uid);
+            const userPosts = await postsService.getPostsByUser(user.id);
             setPosts(userPosts);
           }
         } catch (error) {
