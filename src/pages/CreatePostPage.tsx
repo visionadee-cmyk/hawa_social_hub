@@ -158,8 +158,8 @@ export default function CreatePostPage() {
           media: media.map(m => ({
             id: m.id || '',
             type: m.type || 'image',
-            url: m.url || '',
-            thumbnailUrl: m.thumbnailUrl || m.url || '',
+            url: m.url.startsWith('data:') ? '' : (m.url || ''), // Don't store base64 data
+            thumbnailUrl: m.thumbnailUrl?.startsWith('data:') ? '' : (m.thumbnailUrl || m.url?.startsWith('data:') ? '' : m.thumbnailUrl || m.url || ''),
             width: m.width || 800,
             height: m.height || 600,
             size: m.size || 0,
