@@ -27,6 +27,7 @@ export class FacebookAdapter implements SocialPlatformAdapter {
     authUrl.searchParams.append('scope', scope);
     authUrl.searchParams.append('state', state);
     authUrl.searchParams.append('response_type', 'code');
+    authUrl.searchParams.append('auth_type', 'rerequest');
     
     window.location.href = authUrl.toString();
     
