@@ -11,7 +11,6 @@
     "init-firebase": "node scripts/init-firebase.js"
   },
   "dependencies": {
-    "cloudinary": "^2.10.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "firebase": "^12.17.1",

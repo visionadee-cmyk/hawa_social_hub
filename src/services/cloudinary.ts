@@ -1,14 +1,4 @@
-import { v2 as cloudinary } from 'cloudinary';
 import { config } from '../config';
-
-// Configure Cloudinary
-if (config.cloudinary.cloudName) {
-  cloudinary.config({
-    cloud_name: config.cloudinary.cloudName,
-    api_key: config.cloudinary.apiKey,
-    api_secret: config.cloudinary.apiSecret,
-  });
-}
 
 export interface UploadResult {
   url: string;
@@ -29,13 +19,14 @@ export async function uploadToCloudinary(file: File): Promise<UploadResult> {
   formData.append('upload_preset', config.cloudinary.uploadPreset || 'hawa_social_hub');
   formData.append('folder', 'hawa_social_hub');
 
-  const response = await fetch(
-    `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/image/upload`,
-    {
-      method: 'POST',
-      body: formData,
-    }
-  );
+  // Determine upload endpoint based on file type
+  const resourceType = file.type.startsWith('video/') ? 'video' : 'image';
+  const endpoint = `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/${resourceType}/upload`;
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    body: formData,
+  });
 
   if (!response.ok) {
     const error = await response.json();
@@ -61,16 +52,4 @@ export async function uploadToCloudinary(file: File): Promise<UploadResult> {
 export async function uploadMultipleToCloudinary(files: File[]): Promise<UploadResult[]> {
   const uploadPromises = files.map(file => uploadToCloudinary(file));
   return Promise.all(uploadPromises);
-}
-
-/**
- * Delete a file from Cloudinary (requires signed API)
- */
-export async function deleteFromCloudinary(publicId: string): Promise<void> {
-  try {
-    await cloudinary.uploader.destroy(publicId);
-  } catch (error) {
-    console.error('Failed to delete from Cloudinary:', error);
-    throw new Error('Failed to delete file from Cloudinary');
-  }
 }
