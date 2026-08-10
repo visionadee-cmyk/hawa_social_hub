@@ -18,7 +18,7 @@ import type { DocumentData } from 'firebase/firestore';
 import { getFirebaseFirestore } from './index';
 import type { Business, TeamMember, SocialAccount, Post, PostVariant, PublishingJob, AnalyticsSnapshot, PostAnalytics } from '../types';
 
-const db = getFirebaseFirestore();
+export const db = getFirebaseFirestore();
 
 export const firestoreService = {
   // Business operations
