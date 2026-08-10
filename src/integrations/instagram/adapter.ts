@@ -91,9 +91,85 @@ export class InstagramAdapter implements SocialPlatformAdapter {
     }
 
     // Production: Publish to Instagram using Graph API
-    // For images: POST /{ig-user-id}/media -> CREATE -> POST /{ig-container-id}/publish
-    // For videos: Similar flow with video upload
-    throw new Error('Instagram publishing not implemented in production mode yet');
+    // Note: This method doesn't have accessToken in the interface
+    const { caption, media } = data;
+
+    try {
+      return {
+        success: false,
+        error: 'Instagram publishing requires accessToken which is not available in PublishData interface',
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message || 'Instagram publishing failed',
+        errorDetails: error,
+      };
+    }
+  }
+
+  async publishPost(data: { caption: string; media: MediaItem[]; accessToken: string; pageId: string }): Promise<{ platformPostId: string; status: string }> {
+    const { caption, media, accessToken, pageId } = data;
+
+    if (media && media.length > 0) {
+      // Instagram publishing requires a multi-step process:
+      // 1. Create media container (POST /{ig-user-id}/media)
+      // 2. Publish the container (POST /{ig-container-id}/publish)
+
+      const firstMedia = media[0];
+
+      // Step 1: Create media container
+      const containerResponse = await fetch(
+        `https://graph.facebook.com/v18.0/${pageId}/media`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            image_url: firstMedia.url,
+            caption: caption || '',
+          }),
+        }
+      );
+
+      if (!containerResponse.ok) {
+        const error = await containerResponse.json();
+        throw new Error(`Instagram media container creation failed: ${error.error?.message || 'Unknown error'}`);
+      }
+
+      const containerResult = await containerResponse.json();
+      const containerId = containerResult.id;
+
+      // Step 2: Publish the container
+      const publishResponse = await fetch(
+        `https://graph.facebook.com/v18.0/${pageId}/media_publish`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            creation_id: containerId,
+          }),
+        }
+      );
+
+      if (!publishResponse.ok) {
+        const error = await publishResponse.json();
+        throw new Error(`Instagram publishing failed: ${error.error?.message || 'Unknown error'}`);
+      }
+
+      const publishResult = await publishResponse.json();
+      return {
+        platformPostId: publishResult.id,
+        status: 'published',
+      };
+    } else {
+      throw new Error('Instagram requires at least one media item');
+    }
   }
 
   async getPostStatus(accountId: string, platformPostId: string): Promise<PostStatus> {
